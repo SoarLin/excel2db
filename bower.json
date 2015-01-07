@@ -20,6 +20,7 @@
     "components"
   ],
   "dependencies": {
-    "bootstrap": "~3.3.1"
+    "bootstrap": "~3.3.1",
+    "jasny-bootstrap": "*"
   }
 }
