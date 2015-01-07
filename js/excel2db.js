@@ -1,0 +1,3 @@
+(function($) {
+    $('.fileinput').fileinput();
+})(jQuery);

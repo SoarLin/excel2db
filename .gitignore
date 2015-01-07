@@ -1,1 +1,3 @@
 components/*
+include/PHPExcel
+include/PHPExcel/*

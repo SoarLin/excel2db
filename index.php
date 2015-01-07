@@ -1,3 +1,10 @@
+<?php
+  require_once 'include/config.php';
+
+  $file_name = @$_POST['upload_file'];
+  // echo "上傳檔案 = ".$file_name;
+
+?>
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -38,16 +45,32 @@
   </nav>
 
   <div class="container main-field">
-    <div class="fileinput fileinput-new input-group" data-provides="fileinput">
-      <div class="form-control" data-trigger="fileinput"><i class="glyphicon glyphicon-file fileinput-exists"></i> <span class="fileinput-filename"></span></div>
-      <span class="input-group-addon btn btn-default btn-file"><span class="fileinput-new">Select file</span><span class="fileinput-exists">Change</span><input type="file" name="..."></span>
-      <a href="#" class="input-group-addon btn btn-default fileinput-exists" data-dismiss="fileinput">Remove</a>
-    </div>
+    <form class="row" name="uploadForm" method="post" action="index.php">
+      <div class="col-md-10">
+        <div class="fileinput fileinput-new input-group" data-provides="fileinput">
+          <div class="form-control" data-trigger="fileinput">
+            <i class="glyphicon glyphicon-file fileinput-exists"></i>
+            <span class="fileinput-filename"></span>
+          </div>
+          <span class="input-group-addon btn btn-default btn-file">
+            <span class="fileinput-new">Select file</span>
+            <span class="fileinput-exists">Change</span>
+            <input type="file" name="upload_file">
+          </span>
+          <a href="#" class="input-group-addon btn btn-default fileinput-exists" data-dismiss="fileinput">Remove</a>
+        </div>
+      </div>
+      <div class="col-md-2">
+        <button type="submit" class="btn btn-primary btn-block">確認上傳</button>
+      </div>
+    </form>
+
   </div>
 
 
   <script src="components/jquery/dist/jquery.min.js"></script>
   <script src="components/bootstrap/dist/js/bootstrap.min.js"></script>
   <script src="components/jasny-bootstrap/dist/js/jasny-bootstrap.min.js"></script>
+  <script src="js/excel2db.js"></script>
 </body>
 </html>
