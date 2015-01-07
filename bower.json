@@ -1,0 +1,25 @@
+{
+  "name": "excel2db",
+  "version": "0.0.1",
+  "authors": [
+    "soar <soar.lin@gmail.com>"
+  ],
+  "description": "Read excel data to insert MySQL",
+  "main": "index.php",
+  "keywords": [
+    "PHPExcel"
+  ],
+  "license": "MIT",
+  "homepage": "index.php",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests",
+    "components"
+  ],
+  "dependencies": {
+    "bootstrap": "~3.3.1"
+  }
+}
