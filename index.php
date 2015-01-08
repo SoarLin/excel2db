@@ -1,8 +1,39 @@
 <?php
-  require_once 'include/config.php';
+    require_once 'include/config.php';
+    require_once 'include/ExcelToMySQL.php';
 
-  $file_name = @$_POST['upload_file'];
-  // echo "上傳檔案 = ".$file_name;
+    define('ShowInfo', false);
+    define('SITE_ROOT', realpath(dirname(__FILE__)));
+
+    $excelHandler = new ExcelToMySQL($devDB);
+
+    if(isset($_FILES['userfile'])){
+        $excelPath = getUploadFile();
+        $excelHandler->setExcelFile($excelPath);
+        $excelHandler->handleExcelFile();
+    }
+
+function getUploadFile() {
+    $uploadfile = basename($_FILES['userfile']['name']);
+    $extension_name = substr($uploadfile, stripos($uploadfile, "."));
+    // $newfilename = date("YmdHis").$extension_name;
+    $newfilename = "test".$extension_name;
+    $newfilename_path = SITE_ROOT."/uploads/".$newfilename;
+    if(ShowInfo) print_r($newfilename_path);
+
+    if(ShowInfo) echo '<pre>';
+    if (move_uploaded_file($_FILES['userfile']['tmp_name'], $newfilename_path)) {
+        // echo "File is valid, and was successfully uploaded.\n";
+        return $newfilename_path;
+    } else {
+        echo "Possible file upload attack!\n";
+        return NULL;
+    }
+
+    if(ShowInfo) echo 'Here is some more debugging info:';
+    if(ShowInfo) print_r($_FILES);
+    if(ShowInfo) print "</pre>";
+}
 
 ?>
 <!DOCTYPE html>
@@ -45,9 +76,9 @@
   </nav>
 
   <div class="container main-field">
-    <form class="row" name="uploadForm" method="post" action="index.php">
+    <form class="row" name="uploadForm" method="post" action="index.php" enctype="multipart/form-data">
       <div class="col-md-10">
-        <div class="fileinput fileinput-new input-group" data-provides="fileinput">
+        <div class="fileinput fileinput-new input-group" data-provides="fileinput" data-name="userfile">
           <div class="form-control" data-trigger="fileinput">
             <i class="glyphicon glyphicon-file fileinput-exists"></i>
             <span class="fileinput-filename"></span>
@@ -55,7 +86,7 @@
           <span class="input-group-addon btn btn-default btn-file">
             <span class="fileinput-new">Select file</span>
             <span class="fileinput-exists">Change</span>
-            <input type="file" name="upload_file">
+            <input type="file" name="userfile">
           </span>
           <a href="#" class="input-group-addon btn btn-default fileinput-exists" data-dismiss="fileinput">Remove</a>
         </div>
