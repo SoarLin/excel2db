@@ -5,8 +5,11 @@
     define('SITE_ROOT', realpath(dirname(__FILE__)));
 
     if(isset($_FILES['userfile'])){
-        $excel_file = getUploadFile();
+        // $excel_file = getUploadFile();
     }
+    $date = new DateTime();
+    echo $date->getTimestamp();
+    echo "  ".time();
 
 function getUploadFile() {
     $uploadfile = basename($_FILES['userfile']['name']);

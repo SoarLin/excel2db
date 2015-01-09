@@ -9,30 +9,38 @@
 
     if(isset($_FILES['userfile'])){
         $excelPath = getUploadFile();
-        $excelHandler->setExcelFile($excelPath);
-        $excelHandler->handleExcelFile();
+        $extension_name = pathinfo($excelPath,PATHINFO_EXTENSION);
+
+        if ($extension_name == "xlsx" || $extension_name == "xls") {
+            $excelHandler->setExcelFile($excelPath);
+            $excelHandler->handleExcelFile();
+        } else {
+            echo "<div class=\"my-alert text-center\"><div class=\"alert alert-danger alert-dismissible\" role=\"alert\">".
+            "<button type=\"button\" class=\"close\" data-dismiss=\"alert\" aria-label=\"Close\">".
+            "<span aria-hidden=\"true\">&times;</span></button><strong>錯誤! </strong> 請上傳檔案Excel檔案</div></div>";
+        }
     }
 
 function getUploadFile() {
     $uploadfile = basename($_FILES['userfile']['name']);
-    $extension_name = substr($uploadfile, stripos($uploadfile, "."));
-    // $newfilename = date("YmdHis").$extension_name;
-    $newfilename = "test".$extension_name;
+    $extension = pathinfo($uploadfile,PATHINFO_EXTENSION);
+    // $newfilename = date("YmdHis").".".$extension;
+    $newfilename = "test".".".$extension;
     $newfilename_path = SITE_ROOT."/uploads/".$newfilename;
-    if(ShowInfo) print_r($newfilename_path);
+    if(ShowInfo) echo $newfilename_path;
 
     if(ShowInfo) echo '<pre>';
     if (move_uploaded_file($_FILES['userfile']['tmp_name'], $newfilename_path)) {
-        // echo "File is valid, and was successfully uploaded.\n";
-        return $newfilename_path;
+        if(ShowInfo) echo "File is valid, and was successfully uploaded.\n";
     } else {
-        echo "Possible file upload attack!\n";
-        return NULL;
+        if(ShowInfo) echo "Possible file upload attack!\n";
+        $newfilename_path = "";
     }
 
     if(ShowInfo) echo 'Here is some more debugging info:';
     if(ShowInfo) print_r($_FILES);
-    if(ShowInfo) print "</pre>";
+    if(ShowInfo) echo "</pre>";
+    return $newfilename_path;
 }
 
 ?>
