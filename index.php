@@ -21,6 +21,29 @@
         }
     }
 
+    // $date = "03-30-13";
+    // echo "時間 : ".$date.", timestamp = ";
+    // list($month, $day, $year) = explode('-', $date);
+    // echo mktime(0, 0, 0, $month, $day, $year), "<br>";
+    // echo strtotime($date), "<br>";
+    // $date = "2013-03-30";
+    // echo "時間 : ".$date.", timestamp = ";
+    // echo strtotime($date), "<br>";
+    // $date = "2012/10/25";
+    // echo "時間 : ".$date.", timestamp = ";
+    // echo strtotime($date), "<br>";
+    // $date = "";
+    // echo var_dump(is_numeric($date));
+    // $date = "41363";
+    // echo var_dump(is_numeric($date));
+
+    // $temp = "歐式料理, 素食, 早午餐";
+    // $tempAry = explode(',', $temp);
+    // $cataAry = array();
+    // foreach ($tempAry as $key => $value) {
+    //     echo "[".$key.":".trim($value)."],";
+    // }
+
 function getUploadFile() {
     $uploadfile = basename($_FILES['userfile']['name']);
     $extension = pathinfo($uploadfile,PATHINFO_EXTENSION);
