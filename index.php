@@ -1,6 +1,7 @@
 <?php
     require_once 'include/config.php';
     require_once 'include/ExcelToMySQL.php';
+    ini_set('date.timezone','Asia/Taipei');
 
     define('ShowInfo', false);
     define('SITE_ROOT', realpath(dirname(__FILE__)));
@@ -47,7 +48,7 @@
 function getUploadFile() {
     $uploadfile = basename($_FILES['userfile']['name']);
     $extension = pathinfo($uploadfile,PATHINFO_EXTENSION);
-    // $newfilename = date("YmdHis").".".$extension;
+    // $newfilename = date("Y-m-d_H:i:s").".".$extension;
     $newfilename = "test".".".$extension;
     $newfilename_path = SITE_ROOT."/uploads/".$newfilename;
     if(ShowInfo) echo $newfilename_path;
