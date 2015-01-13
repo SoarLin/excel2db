@@ -58,14 +58,13 @@ class ExcelToMySQL {
             for($j = $rowIndex ; $j <= $highestRow; $j++){
                 echo "第".$j."行資料";
 
-                if (!$this->isStoreActivate(trim( $activeSheet->getCell("A"."$j")->getValue())))
+                // 合作狀態
+                if (!$this->isStoreActivate(trim( $activeSheet->getCell("F"."$j")->getValue())))
                     break;
 
                 $this->getStoreBasicInfo($StoreObj, $activeSheet, $j);
                 $this->getStoreAddress($StoreObj, $activeSheet, $j);
                 $this->getStoreAdditional($StoreObj, $activeSheet, $j);
-                // 店家分類
-                $cateAry = $this->getStoreCategory( trim($activeSheet->getCell("H"."$j")->getValue()) );
 
                 $this->getSalesData($SalseObj, $activeSheet, $j);
                 if($rCount > 9){
@@ -75,39 +74,83 @@ class ExcelToMySQL {
                 echo "<pre>";
                 print_r($StoreObj);
                 print_r($SalseObj);
-                if(count($cateAry) == 0) echo "找不到分類";
+                // if(count($cateAry) == 0) echo "找不到分類";
                 echo "</pre>";
             }
         }
+    }
+
+
+    /**
+     * 讀取表格中店家基本資料
+     * @param &stdClass 店家物件參考位址
+     * @param activeSheet Excel中正在讀取的分頁
+     * @param j Excel表格中的行數 Row
+     * @return none
+     */
+    function getStoreBasicInfo(&$StoreObj, $activeSheet, $j) {
+        // 店名
+        $StoreObj->name     = trim( $activeSheet->getCell("I"."$j")->getValue() );
+        // 分店名
+        $StoreObj->branch   = trim( $activeSheet->getCell("J"."$j")->getValue() );
+        // 電話
+        $StoreObj->tel      = trim( $activeSheet->getCell("N"."$j")->getValue() );
+        // 手機
+        $StoreObj->mobile   = trim( $activeSheet->getCell("O"."$j")->getValue() );
+        // email
+        $StoreObj->email    = trim( $activeSheet->getCell("P"."$j")->getValue() );
+    }
+
+    /**
+     * 讀取Excel中店家縣市區域資料
+     * @param &stdClass 店家物件參考位址
+     * @param activeSheet Excel中正在讀取的分頁
+     * @param j Excel表格中的行數 Row
+     * @return none
+     */
+    function getStoreAddress(&$StoreObj, $activeSheet, $j) {
+        // 縣市, 行政區
+        $StoreObj->city_id = $this->getCityID(trim($activeSheet->getCell("K"."$j")->getValue()));
+        $StoreObj->area_id = $this->getAreaID(trim($activeSheet->getCell("L"."$j")->getValue()));
+        // 店家代碼，透過代碼中的郵遞區號找出縣市與行政區
+        // $store_code = trim( $activeSheet->getCell("H"."$j")->getValue() );
+        // $zipcode = substr($store_code, 2, 3);
+        // $this->setCityArea($StoreObj, $zipcode);
+
+        // 地址暫時不處理，請工讀生日後手動填入
+        // $zipcode = $this->getZIPCode( trim($activeSheet->getCell("K"."$j")->getValue()) );
+        $StoreObj->address = trim( $activeSheet->getCell("M"."$j")->getValue() );
     }
 
     /**
      * 讀取Excel中店家額外資料(營業時間,公休日,付款方式,客均價,上下架日期)
      * @param &stdClass 店家物件參考位址
      * @param activeSheet Excel中正在讀取的分頁
-     * @param j Excel表格中的行數 Row 
+     * @param j Excel表格中的行數 Row
      * @return none
      */
     function getStoreAdditional(&$StoreObj, $activeSheet, $j) {
         // 營業時間先不處理, 工讀生手動上資料
-        $StoreObj->operate_time = "";
+        $StoreObj->operate_time = ""; //trim( $activeSheet->getCell("Q"."$j")->getValue() );
         // 公休日
-        $StoreObj->rest_time  = trim( $activeSheet->getCell("AI"."$j")->getValue() );
-        // 付款方式, 預設現金
-        $StoreObj->pay_way    = "cash";
+        $StoreObj->rest_time  = trim( $activeSheet->getCell("R"."$j")->getValue() );
+        // 餐飲類別
+        $cateAry = $this->getStoreCategory( trim($activeSheet->getCell("AB"."$j")->getValue()) );
         // 客均價先不處理, 工讀生手動上資料
         $StoreObj->price      = "";
+        // 收費方式, 預設現金
+        $StoreObj->pay_way    = "cash";
         // 上架日期(合約開始日)
-        $StoreObj->start_date = $this->getTimeStamp(trim($activeSheet->getCell("AA"."$j")->getFormattedValue()));
+        $StoreObj->start_date = $this->getTimeStamp(trim($activeSheet->getCell("B"."$j")->getFormattedValue()));
         // 下架日期(合約結束日)
-        $StoreObj->end_date   = $this->getTimeStamp(trim($activeSheet->getCell("AB"."$j")->getFormattedValue()));
+        $StoreObj->end_date   = $this->getTimeStamp(trim($activeSheet->getCell("C"."$j")->getFormattedValue()));
     }
 
     /**
      * 讀取Excel中店家額外資料(營業時間,公休日,付款方式,客均價)
      * @param &stdClass 店家物件參考位址
      * @param activeSheet Excel中正在讀取的分頁
-     * @param j Excel表格中的行數 Row 
+     * @param j Excel表格中的行數 Row
      * @return none
      */
     function getStoreCategory($category_str) {
@@ -139,75 +182,60 @@ class ExcelToMySQL {
     }
 
     /**
-     * 讀取Excel中店家縣市區域資料
-     * @param &stdClass 店家物件參考位址
-     * @param activeSheet Excel中正在讀取的分頁
-     * @param j Excel表格中的行數 Row 
-     * @return none
-     */
-    function getStoreAddress(&$StoreObj, $activeSheet, $j) {
-        // 店家代碼
-        $store_code = trim( $activeSheet->getCell("B"."$j")->getValue() );
-        $zipcode = substr($store_code, 2, 3);
-        $this->setCityArea($StoreObj, $zipcode);
-
-        // 地址暫時不處理，請工讀生日後手動填入
-        $zipcode = $this->getZIPCode( trim($activeSheet->getCell("K"."$j")->getValue()) );
-        $StoreObj->address = trim( $activeSheet->getCell("K"."$j")->getValue() );
-    }
-
-    /**
-     * 讀取表格中店家基本資料
-     * @param &stdClass 店家物件參考位址
-     * @param activeSheet Excel中正在讀取的分頁
-     * @param j Excel表格中的行數 Row 
-     * @return none
-     */
-    function getStoreBasicInfo(&$StoreObj, $activeSheet, $j) {
-        // 店名
-        $StoreObj->name     = trim( $activeSheet->getCell("F"."$j")->getValue() );
-        // 分店名
-        $StoreObj->branch   = trim( $activeSheet->getCell("G"."$j")->getValue() );
-        // 電話
-        $StoreObj->tel      = trim( $activeSheet->getCell("M"."$j")->getValue() );
-    }
-
-    /**
      * 讀取表格中業務系統所需要的資料
      * @param &stdClass 業務物件參考位址
      * @param activeSheet Excel中正在讀取的分頁
-     * @param j Excel表格中的行數 Row 
+     * @param j Excel表格中的行數 Row
      * @return none
      */
     function getSalesData(&$SalseObj, $activeSheet, $j) {
-        // 店家代碼
-        $SalseObj->code          = trim( $activeSheet->getCell("B"."$j")->getValue() );
+        // 店家簽約日
+        $SalseObj->sign_date     = $this->getTimeStamp(trim($activeSheet->getCell("A"."$j")->getFormattedValue()));
+        // 紙本合約備註
+        $SalseObj->note          = trim( $activeSheet->getCell("D"."$j")->getValue() );
         // 負責業務
         $SalseObj->running_man   = trim( $activeSheet->getCell("E"."$j")->getValue() );
+        // 連鎖品牌代碼
+        $SalseObj->chain_code    = trim( $activeSheet->getCell("G"."$j")->getValue() );
+        // 店家代碼
+        $SalseObj->code          = trim( $activeSheet->getCell("H"."$j")->getValue() );
         // 傳真, 目前合約沒這資料
         $SalseObj->fax           = "";
         // email
-        $SalseObj->email         = trim( $activeSheet->getCell("O"."$j")->getValue() );
-        // 網站
-        $SalseObj->website       = $this->validateURL(trim( $activeSheet->getCell("J"."$j")->getValue()), "Web");
-        // FB
-        $SalseObj->facebook      = $this->validateURL(trim( $activeSheet->getCell("P"."$j")->getValue()), "FB");
+        $SalseObj->email         = trim( $activeSheet->getCell("P"."$j")->getValue() );
+        // 官方網站
+        $SalseObj->website       = $this->validateURL(trim( $activeSheet->getCell("S"."$j")->getValue()), "Web");
+        // FB粉絲團
+        $SalseObj->facebook      = $this->validateURL(trim( $activeSheet->getCell("T"."$j")->getValue()), "FB");
+        // 受訪意願，TBD
+        $SalseObj->interview     = trim( $activeSheet->getCell("U"."$j")->getValue());
         // 店家聯絡人
-        $SalseObj->contact       = trim( $activeSheet->getCell("N"."$j")->getValue() );
+        $SalseObj->contact       = trim( $activeSheet->getCell("W"."$j")->getValue() );
         // 店家聯絡人-職稱
-        $SalseObj->contact_title = "";
+        $SalseObj->contact_title = trim( $activeSheet->getCell("X"."$j")->getValue() );
         // 店家聯絡人-電話
-        $SalseObj->contact_phone = "";
+        $SalseObj->contact_phone = trim( $activeSheet->getCell("Y"."$j")->getValue() );
         // 店家聯絡人-手機
-        $SalseObj->contact_mobile= "";
+        $SalseObj->contact_mobile= trim( $activeSheet->getCell("Z"."$j")->getValue() );
         // 店家聯絡人-email
-        $SalseObj->contact_email = trim( $activeSheet->getCell("O"."$j")->getValue() );
+        $SalseObj->contact_email = trim( $activeSheet->getCell("AA"."$j")->getValue() );
+        // 其他設備
+        $SalseObj->contact_email = trim( $activeSheet->getCell("AF"."$j")->getValue() );
+        // 發票抬頭
+        $SalseObj->uniform_name  = trim( $activeSheet->getCell("AG"."$j")->getValue() );
+        // 發票統編
+        $SalseObj->uniform       = trim( $activeSheet->getCell("AH"."$j")->getValue() );
+        // 發票類型
+        $SalseObj->uniform_type  = trim( $activeSheet->getCell("AI"."$j")->getValue() );
+        // 發票寄送地址
+        $SalseObj->uniform_address= trim( $activeSheet->getCell("AJ"."$j")->getValue() );
+
         // 店家描述
-        $SalseObj->store_description = trim( $activeSheet->getCell("U"."$j")->getValue() );
+        $SalseObj->store_description = trim( $activeSheet->getCell("AS"."$j")->getValue() );
         // 店家簽約人
-        $SalseObj->sign_man      = trim( $activeSheet->getCell("Y"."$j")->getValue() );
-        // 店家簽約日
-        $SalseObj->sign_date     = $this->getTimeStamp(trim($activeSheet->getCell("Z"."$j")->getFormattedValue()));
+        $SalseObj->sign_man      = trim( $activeSheet->getCell("AT"."$j")->getValue() );
+
+
     }
 
     /**
@@ -267,16 +295,34 @@ class ExcelToMySQL {
      */
     function getCityID($city) {
         $id = 30;
-
-        $normal_name = str_replace("臺", "台", $city);
+        // $normal_name = str_replace("臺", "台", $city);
         // echo "改[".$normal_name."]<br>";
-        $sql = "SELECT * FROM `city_data` WHERE title like ?";
+        $sql = "SELECT * FROM `city_data` WHERE title = :title";
         $stmt = $this->dbh->prepare($sql);
-        $stmt->bindValue(1, "$normal_name%", PDO::PARAM_STR);
+        $stmt->bindParam(':title', $city, PDO::PARAM_STR);
         $stmt->execute();
         while($row = $stmt->fetch()) {
             $id = $row['id'];
             // echo "縣市ID = ".$id."<br>";
+        }
+        return $id;
+    }
+
+    /**
+     * 取得所屬行政區ID
+     * @param area 行政區名稱
+     * @return area_id
+     */
+    function getAreaID($area) {
+        $id = 0;
+
+        $sql = "SELECT * FROM `area_data` WHERE title = :title";
+        $stmt = $this->dbh->prepare($sql);
+        $stmt->bindParam(':title', $area, PDO::PARAM_STR);
+        $stmt->execute();
+        while($row = $stmt->fetch()) {
+            $id = $row['id'];
+            // echo "行政區ID = ".$id."<br>";
         }
         return $id;
     }
@@ -301,7 +347,7 @@ class ExcelToMySQL {
         $status = strtoupper($status);
         if ($status == 'A' || $status == 'Z')
             return true;
-        else 
+        else
             return false;
     }
 
