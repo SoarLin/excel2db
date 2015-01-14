@@ -40,6 +40,7 @@
                 foreach($obj as $key => $value){
                     $sqla .= "`". $key ."`,";
                     $sqlb .= "?,";
+                    // $sqlb .= "'$value',";
                     array_push($args, $value);
                 }
                 $sqla = substr($sqla, 0, strlen($sqla)-1);
@@ -54,6 +55,38 @@
                     return $this->getLastID();
                 } else {
                     return $count;
+                }
+            } catch (PDOException $e){
+                echo $e->getMessage();
+                throw $e;
+            }
+        }
+
+        /**
+         * @brief 新增 Timestamp 欄位
+         * @param object $obj 要新增的使用者物件
+         * @return ID
+         * @see IDBOperate::insert()
+         */
+        function insertTimestampField($obj) {
+            try{
+                $sqla = "INSERT INTO `". $this->table ."` (";
+                $sqlb = ") VALUES (";
+                foreach($obj as $key => $value) {
+                    if (strlen($value) > 0) {
+                        $sqla .= "`". $key ."`,";
+                        $sqlb .= "FROM_UNIXTIME('".$value."'),";
+                    }
+                }
+                $sqla = substr($sqla, 0, strlen($sqla)-1);
+                $sqlb = substr($sqlb, 0, strlen($sqlb)-1). ");";
+                // echo $sqla.$sqlb;
+                $sth = $this->dbh->prepare($sqla.$sqlb);
+                $result = $sth->execute();
+                if ($result) {
+                    return $this->getLastID();
+                } else {
+                    return $result;
                 }
             } catch (PDOException $e){
                 throw $e;
@@ -83,6 +116,54 @@
                 // }
                 $sth = $this->dbh->prepare($sqla);
                 $sth->execute($args);
+                return $sth->rowCount();
+            } catch (PDOException $e){
+                throw $e;
+            }
+        }
+
+        /**
+         * @brief 根據經緯度更新座標
+         * @param int $id 要被修改的ID
+         * @param string $fieldName 座標欄位名稱
+         * @param float $lat 緯度
+         * @param float $lng 經度
+         * @return 結果碼
+         * @see IDBOperate::update()
+         */
+        function updateLocation($id, $fieldName, $lat, $lng){
+            try{
+                $sql = "UPDATE `". $this->table ."` SET `".$fieldName.
+                "` = GeomFromText('POINT(".$lat." ".$lng.")')".
+                " WHERE `" . $this->idName . "` = ".$id;
+                // echo $sql;
+                $sth = $this->dbh->prepare($sql);
+                $sth->execute();
+                return $sth->rowCount();
+            } catch (PDOException $e){
+                throw $e;
+            }
+        }
+
+        /**
+         * @brief 新增 Timestamp 欄位
+         * @param object $obj 要新增的使用者物件
+         * @return ID
+         * @see IDBOperate::insert()
+         */
+        function updateTimestampField($id, $obj) {
+            try{
+                $sql = "UPDATE `". $this->table ."` SET ";
+                foreach($obj as $key => $value){
+                    if (strlen($value) > 0) {
+                        $sql .= "`". $key ."` = FROM_UNIXTIME('".$value."'),";
+                    }
+                }
+
+                $sql = substr($sql, 0, strlen($sql)-1). " WHERE `" . $this->idName . "` = ".$id;;
+                // echo $sql;
+                $sth = $this->dbh->prepare($sql);
+                $sth->execute();
                 return $sth->rowCount();
             } catch (PDOException $e){
                 throw $e;
@@ -138,6 +219,26 @@
          */
         function getLastID(){
             return $this->dbh->lastInsertId("`".$this->idName."`");
+        }
+
+         /**
+         * @brief 依資料stdClass取得ID
+         * @param object $obj 資料Obj
+         * @return ID
+         */
+        function getIdByData($obj){
+            $sql = "SELECT ". $this->idName ." FROM `". $this->table ."` WHERE ";
+            $args = array();
+            foreach($obj as $key => $value){
+                $sql .= "`". $key ."` = ? AND ";
+                array_push($args, $value);
+                $sql .= "`". $key ."` = '".$value."' AND ";
+            }
+            $sql = substr($sql,0,strlen($sql)-5);
+            // echo $sql."<br/>";
+            $sth = $this->dbh->prepare($sql);
+            $sth->execute($args);
+            return $sth->fetchColumn();
         }
 
     }
