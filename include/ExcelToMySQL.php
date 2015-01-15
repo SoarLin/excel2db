@@ -2,6 +2,8 @@
 include_once 'Classes/PHPExcel.php';
 include_once 'sql/StoresDB.php';
 include_once 'sql/SalesDB.php';
+include_once 'sql/StoreCategoryDB.php';
+include_once 'sql/StorePickDB.php';
 
 class ExcelToMySQL {
     var $dbh;
@@ -42,86 +44,72 @@ class ExcelToMySQL {
         // if ($sheetName != "台北") break;
 
         $highestRow = $activeSheet->getHighestRow();
-        echo "分頁名稱 = ".$sheetName.", 最高行數 = ".$highestRow."(只讀取前100筆資料)<br/>";
+        echo "分頁名稱[".$sheetName."], 最高行數 = ".$highestRow."(只讀取前100筆資料)<br/>";
         //手動設定讀取範圍
         if($highestRow > 102)
             $highestRow = 102   ;
 
-        // for($j = $rowIndex ; $j <= $highestRow; $j++){
-        for($j = $rowIndex ; $j <= $rowIndex+4; $j++){
-            echo "第".$j."行資料, ";
+        for($j = $rowIndex ; $j <= $highestRow; $j++){
+        // for($j = $rowIndex ; $j <= $rowIndex; $j++){
+            // echo "第".$j."行資料, ";
             if ( trim($activeSheet->getCell("H"."$j")->getValue()) == "" ){
                 $error_array[] = $j;
                 break;
             }
 
             $SalesObj = $this->CreateSalesObject();
+            $StoreObj = $this->CreateStoresObject();
 
             // 抓取業務表格資料
             $this->getSalesData($SalesObj, $activeSheet, $j);
 
-            // 新增資料前先檢查是否已存在，新增後取回 sales_id
+            // 檢查店家代碼是否已存在，新增或更新後取回 sales_id 再給店家表格用
             $checkObj = new stdClass();
             $checkObj->store_num = $SalesObj->store_num;
             $sales_id = $this->CheckAndInsert($salesDB, $checkObj, $SalesObj);
-            // echo "sales_id = ".$sales_id."<br>";
-            $result = $this->handleSalesTimeStampField($salesDB, $sales_id, $activeSheet, $j);
-            $result = $salesDB->updateLocation($sales_id, 'location', $SalesObj->lat, $SalesObj->lng);
+            $salesDB->updateGeomPoint($sales_id, 'location', $SalesObj->lat, $SalesObj->lng);
 
-            // 透過店家代號，找店家id
-            $store_id = $storeDB->getIdByData($checkObj);
-            // echo "store_id = ".$store_id."<br>";
-            // 檢查 stores 中 id 是否有資料已經與 sales_id 相同
-            // 檢查店家狀態，再新增到 stores 表格中
-            if ( ($sales_id != $store_id) && $this->isStoreActivate($SalesObj->status) ){
-                $StoreObj = $this->CreateStoresObject();
-                // 設定要存到店家表格的資料
-                $this->setStoreData($StoreObj, $SalesObj, $sales_id);
+            // 設定要存到店家表格的資料
+            $this->setStoreData($StoreObj, $SalesObj, $sales_id);
 
-                // 新增資料
-                $store_id = $storeDB->insert($StoreObj);
-                $result = $this->handleStoresTimeStampField($storeDB, $store_id, $activeSheet, $j);
-                $result = $storeDB->updateLocation($store_id, 'location', $StoreObj->lat, $StoreObj->lng);
-                echo "<pre> 店家表格<br>";
-                var_dump($StoreObj);
-                echo "</pre>";
+            $checkObj = new stdClass();
+            $checkObj->id = $sales_id;
+            $store_id = $this->CheckAndInsert($storeDB, $checkObj, $StoreObj);
+            // echo "store_id = ".$store_id.", ";
+            $storeDB->updateGeomPoint($store_id, 'location', $StoreObj->lat, $StoreObj->lng);
+
+            if ( $this->isStoreActivate($SalesObj->status) == false){
+                // echo "要刪除store_id = ".$store_id.", ";
+                $storeDB->delete($store_id);
             }
 
             // 新增 店家<->餐廳類型 關聯表
+            $this->updateStoreCategory($store_id, $activeSheet, $j);
 
             // 新增 店家<->標籤 關聯表
-
+            $this->updateStorePick($store_id, $activeSheet, $j);
 
             $rCount++;
-            echo "<pre> 業務表格<br>";
-            var_dump($SalesObj);
-            echo "</pre>";
+            // echo "<pre> 店家表格<br>";
+            // var_dump($StoreObj);
+            // echo "</pre>";
+            // echo "<pre> 業務表格<br>";
+            // var_dump($SalesObj);
+            // echo "</pre>";
+            usleep(5000000);
         }
 
-    }
-
-
-    function handleSalesTimeStampField($salesDB, $id, $activeSheet, $j) {
-        $timeObj = new stdClass();
-        // 創建時間
-        $timeObj->created_at = time();
-        // 更新時間
-        $timeObj->updated_at = time();
-        // 店家簽約日
-        $timeObj->sign_date  = $this->getTimeStamp(trim($activeSheet->getCell("A"."$j")->getFormattedValue()));
-        // 上架日期(合約開始日), 下架日期(合約結束日)
-        $timeObj->start_date = $this->getTimeStamp(trim($activeSheet->getCell("B"."$j")->getFormattedValue()));
-        $timeObj->end_date   = $this->getTimeStamp(trim($activeSheet->getCell("C"."$j")->getFormattedValue()));
-        return $salesDB->updateTimestampField($id, $timeObj);
-    }
-
-    function handleStoresTimeStampField($storeDB, $id, $activeSheet, $j) {
-        $timeObj = new stdClass();
-        $timeObj->created_at = time();
-        $timeObj->updated_at = time();
-        $timeObj->start_date = $this->getTimeStamp(trim($activeSheet->getCell("B"."$j")->getFormattedValue()));
-        $timeObj->end_date   = $this->getTimeStamp(trim($activeSheet->getCell("C"."$j")->getFormattedValue()));
-        return $storeDB->updateTimestampField($id, $timeObj);
+        echo "總比數：".$rCount.", ";
+        echo "新增比數：".$this->newData.", ";
+        echo "更新比數：".$this->oldData.", ";
+        if (count($this->error_array) > 0) {
+            $temp = "";
+            foreach ($this->error_array as $i => $v) {
+                $temp .= $v.",";
+            }
+            echo "錯誤行數 = ". substr($temp, 0, strlen($temp)-1);
+        }
+        echo "<br>";
     }
 
     /**
@@ -132,6 +120,10 @@ class ExcelToMySQL {
      * @return none
      */
     function getSalesData(&$SalesObj, $activeSheet, $j) {
+        // 店家簽約日, 上架日期(合約開始日), 下架日期(合約結束日)
+        $SalesObj->sign_date     = $this->setMySQLDATETIME(trim($activeSheet->getCell("A"."$j")->getValue()));
+        $SalesObj->start_date    = $this->setMySQLDATETIME(trim($activeSheet->getCell("B"."$j")->getValue()));
+        $SalesObj->end_date      = $this->setMySQLDATETIME(trim($activeSheet->getCell("C"."$j")->getValue()));
         // 紙本合約備註
         $SalesObj->contract_note = trim( $activeSheet->getCell("D"."$j")->getValue() );
         // 負責業務
@@ -181,7 +173,6 @@ class ExcelToMySQL {
         $SalesObj->summary       = trim( $activeSheet->getCell("AV"."$j")->getValue() );
         // 店家簽約人
         $SalesObj->sign_man      = trim( $activeSheet->getCell("AW"."$j")->getValue() );
-
     }
 
     function setStoreData(&$StoreObj, $SalesObj, $sales_id) {
@@ -195,11 +186,12 @@ class ExcelToMySQL {
         $StoreObj->address       = $SalesObj->address;
         $StoreObj->lng           = $SalesObj->lng;
         $StoreObj->lat           = $SalesObj->lat;
-        // $StoreObj->location      = $SalesObj->location;
         $StoreObj->operate_time  = $SalesObj->operate_time;
         $StoreObj->rest_time     = $SalesObj->rest_time;
         $StoreObj->price         = $SalesObj->price;
         $StoreObj->status        = "published";
+        $StoreObj->start_date    = $SalesObj->start_date;
+        $StoreObj->end_date      = $SalesObj->end_date;
     }
 
     /**
@@ -214,10 +206,12 @@ class ExcelToMySQL {
         if($ID){
             $this->oldData++;
             $db->update($ID, $insertObj);
+            // echo "更新, ";
             // echo "資料已存在, ID = ".$ID."<br/>";
         } else {
             $this->newData++;
             $ID = $db->insert($insertObj);
+            // echo "新增, ";
             // echo "新增資料, ID = ".$ID."<br/>";
             // echo "新增資料, ID = <br/>";
             //$this->printObj($insertObj);
@@ -225,6 +219,37 @@ class ExcelToMySQL {
         return $ID;
     }
 
+
+    function updateStorePick($store_id, $activeSheet, $j) {
+        $StorePickDB = new StorePickDB($this->dbh);
+        $storePickObj = new stdClass();
+        $storePickObj->store_id = $store_id;
+
+        $pick_index = ["AA", "AC", "AE"];
+        foreach ($pick_index as $i => $val) {
+            $pick_str = trim($activeSheet->getCell($val.$j)->getValue());
+            if (strlen($pick_str) > 0){
+                $pick_name = explode("/", $pick_str)[1];
+                $storePickObj->pick_id = $this->getPickID($pick_name);
+                $this->CheckAndInsert($StorePickDB, $storePickObj, $storePickObj);
+            }
+        }
+    }
+
+    function updateStoreCategory($store_id, $activeSheet, $j) {
+        $storeCategooryDB = new StoreCategoryDB($this->dbh);
+        $storeCateObj = new stdClass();
+        $storeCateObj->store_id = $store_id;
+
+        $category_index = ["Z", "AB", "AD"];
+        foreach ($category_index as $i => $val) {
+            $category_str = trim($activeSheet->getCell($val.$j)->getValue());
+            if (strlen($category_str) > 0){
+                $storeCateObj->category_id = $this->getCategoryID($category_str);
+                $this->CheckAndInsert($storeCategooryDB, $storeCateObj, $storeCateObj);
+            }
+        }
+    }
 
     /**
      * 取得餐廳類型陣列
@@ -244,14 +269,33 @@ class ExcelToMySQL {
 
     /**
      * 取得餐廳種類id
-     * @param category_name 餐廳種類名稱
+     * @param string 餐廳種類名稱
      * @return cid 餐廳種類id
      */
-    function getCategoryID($category_name) {
+    function getCategoryID($name) {
         $cid = "";
         $sql = "SELECT * FROM `categories` WHERE name = :name";
+        // echo $sql."<br>".$name;
         $stmt = $this->dbh->prepare($sql);
-        $stmt->bindParam(':name', $category_name, PDO::PARAM_STR);
+        $stmt->bindParam(':name', $name, PDO::PARAM_STR);
+        $stmt->execute();
+        while($row = $stmt->fetch()) {
+            $cid = $row['id'];
+        }
+        return $cid;
+    }
+
+    /**
+     * 取得餐廳標籤id
+     * @param string 餐廳標籤名稱
+     * @return cid 餐廳標籤id
+     */
+    function getPickID($name) {
+        $cid = "";
+        $sql = "SELECT * FROM `picks` WHERE name = :name";
+        // echo $sql."<br>".$name;
+        $stmt = $this->dbh->prepare($sql);
+        $stmt->bindParam(':name', $name, PDO::PARAM_STR);
         $stmt->execute();
         while($row = $stmt->fetch()) {
             $cid = $row['id'];
@@ -272,6 +316,15 @@ class ExcelToMySQL {
         list($year, $month, $day) = explode('/', $date_str);
         $temp = mktime(0, 0, 0, $month, $day, $year);
         return $temp;
+    }
+
+    function setMySQLDATETIME($date) {
+        $date = PHPExcel_Style_NumberFormat::toFormattedString($date, 'YYYY-MM-DD');
+        // echo "日期 = ".$date.", ";
+        if (strlen($date) == 0)
+            return NULL;
+        else
+            return date("Y-m-d H:i:s", strtotime($date));
     }
 
     /**
@@ -406,19 +459,6 @@ class ExcelToMySQL {
         $SalesObj->lng = $response['results'][0]['geometry']['location']['lng'];
         // 緯度
         $SalesObj->lat = $response['results'][0]['geometry']['location']['lat'];
-        // $SalesObj->location = "PointFromText('POINT($SalesObj->lat $SalesObj->lng)')";
-    }
-
-    function updateLongLat($city, $area, $sales_id) {
-        $full_address = $city.$area.$SalesObj->address;
-        $url = "http://maps.google.com/maps/api/geocode/json?address=".$full_address."&sensor=false&region=TW";
-        $response = file_get_contents($url);
-        $response = json_decode($response, true);
-        // 經度
-        $SalesObj->lng = $response['results'][0]['geometry']['location']['lng'];
-        // 緯度
-        $SalesObj->lat = $response['results'][0]['geometry']['location']['lat'];
-        $SalesObj->location = "PointFromText('POINT($SalesObj->lat $SalesObj->lng)')";
     }
 
     function getZIPCode($address) {
@@ -441,7 +481,7 @@ class ExcelToMySQL {
         // $status = strtoupper($status);
         $status = explode(" ", $status);
         // echo ", 狀態=".$status[0]."<br>";
-        if ($status[0] == 'A' || $status[0] == 'Z')
+        if ($status[0] == 'A' || $status[0] == 'B')
             return true;
         else
             return false;
@@ -454,8 +494,9 @@ class ExcelToMySQL {
     function CreateStoresObject() {
         $StoreObj = new stdClass();
         $StoreObj->user_id = 1; //admin
-        // $StoreObj->created_at = time();
-        // $StoreObj->updated_at = time();
+        // 創建時間, 更新時間
+        $StoreObj->created_at = date("Y-m-d H:i:s");
+        $StoreObj->updated_at = date("Y-m-d H:i:s");
         return $StoreObj;
     }
 
@@ -465,6 +506,9 @@ class ExcelToMySQL {
      */
     function CreateSalesObject() {
         $SalesObj = new stdClass();
+        // 創建時間, 更新時間
+        $SalesObj->created_at = date("Y-m-d H:i:s");
+        $SalesObj->updated_at = date("Y-m-d H:i:s");
         return $SalesObj;
     }
 

@@ -131,7 +131,7 @@
          * @return 結果碼
          * @see IDBOperate::update()
          */
-        function updateLocation($id, $fieldName, $lat, $lng){
+        function updateGeomPoint($id, $fieldName, $lat, $lng){
             try{
                 $sql = "UPDATE `". $this->table ."` SET `".$fieldName.
                 "` = GeomFromText('POINT(".$lat." ".$lng.")')".

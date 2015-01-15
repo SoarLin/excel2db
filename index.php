@@ -9,6 +9,7 @@
     $excelHandler = new ExcelToMySQL($devDB);
 
     if(isset($_FILES['userfile'])){
+        $start = microtime(true);
         $excelPath = getUploadFile();
         $extension_name = pathinfo($excelPath,PATHINFO_EXTENSION);
 
@@ -20,6 +21,8 @@
             "<button type=\"button\" class=\"close\" data-dismiss=\"alert\" aria-label=\"Close\">".
             "<span aria-hidden=\"true\">&times;</span></button><strong>錯誤! </strong> 請上傳檔案Excel檔案</div></div>";
         }
+        $time_elapsed_us = microtime(true) - $start;
+        echo "處理一份Excel資料，花費時間 = ".$time_elapsed_us."<br>";
     }
 
     // $date = "03-30-13";
@@ -32,7 +35,7 @@
     // echo strtotime($date), "<br>";
     // $date = "2012/10/25";
     // echo "時間 : ".$date.", timestamp = ";
-    // echo strtotime($date), "<br>";
+    // echo date("Y-m-d H:i:s", strtotime($date)), "<br>";
     // $date = "";
     // echo var_dump(is_numeric($date));
     // $date = "41363";
