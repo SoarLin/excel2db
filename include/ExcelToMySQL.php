@@ -8,6 +8,11 @@ include_once 'sql/StorePickDB.php';
 class ExcelToMySQL {
     var $dbh;
     var $file;
+    var $PHPExcel;
+
+    private $sheetCount;    // Excel 分頁數量
+    private $activeSheet;   // 正在作用中的
+    private $sheetName;
 
     private $oldData = 0;
     private $newData = 0;
@@ -19,6 +24,16 @@ class ExcelToMySQL {
 
     function setExcelFile($filename = "") {
         $this->file = $filename;
+        try {
+            $this->PHPExcel = PHPExcel_IOFactory::load($this->file);
+        } catch(Exception $e) {
+            die('Error loading file "'.pathinfo($excelName,PATHINFO_BASENAME).'": '.$e->getMessage());
+        }
+        //讀取工作表分頁數
+        $this->sheetCount = $this->PHPExcel->getSheetCount();
+        //讀取第一個分頁資料, 分頁名稱
+        $this->activeSheet = $this->PHPExcel->getSheet(0);
+        $this->sheetName = $this->activeSheet->getTitle();
     }
 
     function handleExcelFile($rowIndex=3) {
@@ -26,88 +41,83 @@ class ExcelToMySQL {
 
         $salesDB = new SalesDB($this->dbh);
         $storeDB = new StoresDB($this->dbh);
-        try {
-            $PHPExcel = PHPExcel_IOFactory::load($this->file);
-        } catch(Exception $e) {
-            die('Error loading file "'.pathinfo($excelName,PATHINFO_BASENAME).'": '.$e->getMessage());
-        }
 
         //店家數
         $rCount = 0;
 
-        //讀取工作表數目
-        $sheetCount = $PHPExcel->getSheetCount();
-
-        //讀取第一個分頁資料
-        $activeSheet = $PHPExcel->getSheet(0);
-        $sheetName = $activeSheet->getTitle();
-        // if ($sheetName != "台北") break;
-
-        $highestRow = $activeSheet->getHighestRow();
-        echo "分頁名稱[".$sheetName."], 最高行數 = ".$highestRow."(只讀取前100筆資料)<br/>";
+        $highestRow = $this->activeSheet->getHighestRow();
+        echo "分頁名稱 [".$this->sheetName."], 最高行數 = ".$highestRow."(只讀取前100筆資料)<br/>";
         //手動設定讀取範圍
         if($highestRow > 102)
             $highestRow = 102   ;
 
         for($j = $rowIndex ; $j <= $highestRow; $j++){
         // for($j = $rowIndex ; $j <= $rowIndex; $j++){
+            $start = microtime(true);
             // echo "第".$j."行資料, ";
-            if ( trim($activeSheet->getCell("H"."$j")->getValue()) == "" ){
+            if ( trim($this->activeSheet->getCell("H"."$j")->getValue()) == "" ){
                 $error_array[] = $j;
                 break;
             }
 
             $SalesObj = $this->CreateSalesObject();
             $StoreObj = $this->CreateStoresObject();
+            try {
+                // 抓取業務表格資料
+                $this->getSalesData($SalesObj, $this->activeSheet, $j);
 
-            // 抓取業務表格資料
-            $this->getSalesData($SalesObj, $activeSheet, $j);
+                // 檢查店家代碼是否已存在，新增或更新後取回 sales_id 再給店家表格用
+                $checkObj = new stdClass();
+                $checkObj->store_num = $SalesObj->store_num;
+                $sales_id = $this->CheckAndInsert($salesDB, $checkObj, $SalesObj);
+                // echo "sales_id = ".$sales_id.", ";
+                $salesDB->updateGeomPoint($sales_id, 'location', $SalesObj->lat, $SalesObj->lng);
 
-            // 檢查店家代碼是否已存在，新增或更新後取回 sales_id 再給店家表格用
-            $checkObj = new stdClass();
-            $checkObj->store_num = $SalesObj->store_num;
-            $sales_id = $this->CheckAndInsert($salesDB, $checkObj, $SalesObj);
-            $salesDB->updateGeomPoint($sales_id, 'location', $SalesObj->lat, $SalesObj->lng);
+                // 設定要存到店家表格的資料
+                $this->setStoreData($StoreObj, $SalesObj, $sales_id);
 
-            // 設定要存到店家表格的資料
-            $this->setStoreData($StoreObj, $SalesObj, $sales_id);
+                $checkObj = new stdClass();
+                $checkObj->id = $sales_id;
+                $store_id = $this->CheckAndInsert($storeDB, $checkObj, $StoreObj);
+                // echo "store_id = ".$store_id.", ";
+                $storeDB->updateGeomPoint($store_id, 'location', $StoreObj->lat, $StoreObj->lng);
 
-            $checkObj = new stdClass();
-            $checkObj->id = $sales_id;
-            $store_id = $this->CheckAndInsert($storeDB, $checkObj, $StoreObj);
-            // echo "store_id = ".$store_id.", ";
-            $storeDB->updateGeomPoint($store_id, 'location', $StoreObj->lat, $StoreObj->lng);
+                if ( $this->isStoreActivate($SalesObj->status) == false){
+                    // echo "要刪除store_id = ".$store_id.", ";
+                    $storeDB->delete($store_id);
+                }
 
-            if ( $this->isStoreActivate($SalesObj->status) == false){
-                // echo "要刪除store_id = ".$store_id.", ";
-                $storeDB->delete($store_id);
+                // 新增 店家<->餐廳類型 關聯表
+                $this->updateStoreCategory($store_id, $this->activeSheet, $j);
+
+                // 新增 店家<->標籤 關聯表
+                $this->updateStorePick($store_id, $this->activeSheet, $j);
+
+                $rCount++;
+            } catch (Exception $e) {
+                $error_array[] = $j;
             }
 
-            // 新增 店家<->餐廳類型 關聯表
-            $this->updateStoreCategory($store_id, $activeSheet, $j);
-
-            // 新增 店家<->標籤 關聯表
-            $this->updateStorePick($store_id, $activeSheet, $j);
-
-            $rCount++;
             // echo "<pre> 店家表格<br>";
             // var_dump($StoreObj);
             // echo "</pre>";
             // echo "<pre> 業務表格<br>";
             // var_dump($SalesObj);
             // echo "</pre>";
-            usleep(5000000);
+            $time_elapsed_us = microtime(true) - $start;
+            // echo "處理第".$j."行資料，總共花費時間 = ".$time_elapsed_us.", 休息0.3秒 <br>";
+            usleep(300000);
         }
 
         echo "總比數：".$rCount.", ";
-        echo "新增比數：".$this->newData.", ";
-        echo "更新比數：".$this->oldData.", ";
+        echo "新增次數：".$this->newData.", ";
+        echo "更新次數：".$this->oldData.", ";
         if (count($this->error_array) > 0) {
             $temp = "";
             foreach ($this->error_array as $i => $v) {
-                $temp .= $v.",";
+                $temp .= $v."<br>";
             }
-            echo "錯誤行數 = ". substr($temp, 0, strlen($temp)-1);
+            echo "錯誤資料 = ". $temp;
         }
         echo "<br>";
     }
@@ -129,7 +139,7 @@ class ExcelToMySQL {
         // 負責業務
         $SalesObj->sales         = trim( $activeSheet->getCell("E"."$j")->getValue() );
         // 合作狀態
-        $SalesObj->status        = trim( $activeSheet->getCell("F"."$j")->getValue() );
+        $SalesObj->status        = $this->getStatusID( trim($activeSheet->getCell("F"."$j")->getValue()) );
         // 連鎖品牌代碼, 店家代碼
         $SalesObj->chain_num     = trim( $activeSheet->getCell("G"."$j")->getValue() );
         $SalesObj->store_num     = trim( $activeSheet->getCell("H"."$j")->getValue() );
@@ -173,6 +183,8 @@ class ExcelToMySQL {
         $SalesObj->summary       = trim( $activeSheet->getCell("AV"."$j")->getValue() );
         // 店家簽約人
         $SalesObj->sign_man      = trim( $activeSheet->getCell("AW"."$j")->getValue() );
+
+        $this->checkIsDataError($SalesObj, $j);
     }
 
     function setStoreData(&$StoreObj, $SalesObj, $sales_id) {
@@ -202,21 +214,22 @@ class ExcelToMySQL {
      * @return 該筆資料ID
      */
     function CheckAndInsert($db, $checkObj, $insertObj){
-        $ID = $db->getIdByData($checkObj);
-        if($ID){
-            $this->oldData++;
-            $db->update($ID, $insertObj);
-            // echo "更新, ";
-            // echo "資料已存在, ID = ".$ID."<br/>";
-        } else {
-            $this->newData++;
-            $ID = $db->insert($insertObj);
-            // echo "新增, ";
-            // echo "新增資料, ID = ".$ID."<br/>";
-            // echo "新增資料, ID = <br/>";
-            //$this->printObj($insertObj);
+        try{
+            $ID = $db->getIdByData($checkObj);
+            if($ID){
+                $this->oldData++;
+                $db->update($ID, $insertObj);
+                // echo "資料已存在, ID = ".$ID."<br/>";
+            } else {
+                $this->newData++;
+                $ID = $db->insert($insertObj);
+                // echo "新增資料, ID = ".$ID."<br/>";
+                // echo "新增資料, ID = <br/>";
+            }
+            return $ID;
+        } catch (Exception $e) {
+            throw $e;
         }
-        return $ID;
     }
 
 
@@ -228,7 +241,7 @@ class ExcelToMySQL {
         $pick_index = ["AA", "AC", "AE"];
         foreach ($pick_index as $i => $val) {
             $pick_str = trim($activeSheet->getCell($val.$j)->getValue());
-            if (strlen($pick_str) > 0){
+            if (strlen($pick_str) > 0) {
                 $pick_name = explode("/", $pick_str)[1];
                 $storePickObj->pick_id = $this->getPickID($pick_name);
                 $this->CheckAndInsert($StorePickDB, $storePickObj, $storePickObj);
@@ -249,6 +262,24 @@ class ExcelToMySQL {
                 $this->CheckAndInsert($storeCategooryDB, $storeCateObj, $storeCateObj);
             }
         }
+    }
+
+    function checkIsDataError($SalesObj, $j) {
+        $msg = "";
+        if ($SalesObj->status == "") {
+            $msg .= "店家狀態有錯, ";
+        }
+        if ($SalesObj->city_id == "") {
+            $msg .= "縣市欄位有錯, ";
+        }
+        if ($SalesObj->area_id == ""){
+            $msg .= "行政區欄位有錯, ";
+        }
+        if ($SalesObj->price == -1) {
+            $msg .= "價格區間有錯, ";
+        }
+        if(strlen($msg) > 0)
+            $this->error_array[] = "第".$j."行 ".substr($msg, 0, strlen($msg)-2);
     }
 
     /**
@@ -296,6 +327,20 @@ class ExcelToMySQL {
         // echo $sql."<br>".$name;
         $stmt = $this->dbh->prepare($sql);
         $stmt->bindParam(':name', $name, PDO::PARAM_STR);
+        $stmt->execute();
+        while($row = $stmt->fetch()) {
+            $cid = $row['id'];
+        }
+        return $cid;
+    }
+
+    function getStatusID($status_str) {
+        $cid = "";
+        $code = explode(" ", $status_str)[0];
+        $sql = "SELECT * FROM `store_status` WHERE code = :code";
+        // echo $sql."<br>".$name;
+        $stmt = $this->dbh->prepare($sql);
+        $stmt->bindParam(':code', $code, PDO::PARAM_STR);
         $stmt->execute();
         while($row = $stmt->fetch()) {
             $cid = $row['id'];
@@ -365,7 +410,7 @@ class ExcelToMySQL {
         } else if ($price == "高於1000") {
             return 3;
         }
-        return 0;
+        return -1;
     }
 
     /**
@@ -410,7 +455,7 @@ class ExcelToMySQL {
      * @return city_id
      */
     function getCityID($city) {
-        $id = 30;
+        $id = "";
         // $normal_name = str_replace("臺", "台", $city);
         // echo "改[".$normal_name."]<br>";
         $sql = "SELECT * FROM `city_data` WHERE title = :title";
@@ -421,7 +466,7 @@ class ExcelToMySQL {
             $id = $row['id'];
             // echo "縣市ID = ".$id."<br>";
         }
-        return (int)$id;
+        return $id;
     }
 
     /**
@@ -430,7 +475,7 @@ class ExcelToMySQL {
      * @return area_id
      */
     function getAreaID($area) {
-        $id = 0;
+        $id = "";
 
         $sql = "SELECT * FROM `area_data` WHERE title = :title";
         $stmt = $this->dbh->prepare($sql);
@@ -440,7 +485,7 @@ class ExcelToMySQL {
             $id = $row['id'];
             // echo "行政區ID = ".$id."<br>";
         }
-        return (int)$id;
+        return $id;
     }
 
     /**
@@ -478,13 +523,13 @@ class ExcelToMySQL {
      * @return bool true:上架, false:下架
      */
     function isStoreActivate($status){
-        // $status = strtoupper($status);
-        $status = explode(" ", $status);
-        // echo ", 狀態=".$status[0]."<br>";
-        if ($status[0] == 'A' || $status[0] == 'B')
+        //1: A 一般合約
+        //2: B 一般+商城合約
+        if((int)$status <= 2){
             return true;
-        else
+        } else {
             return false;
+        }
     }
 
     /**

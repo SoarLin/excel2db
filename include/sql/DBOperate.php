@@ -57,7 +57,6 @@
                     return $count;
                 }
             } catch (PDOException $e){
-                echo $e->getMessage();
                 throw $e;
             }
         }
