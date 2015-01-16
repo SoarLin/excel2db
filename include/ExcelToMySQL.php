@@ -17,6 +17,7 @@ class ExcelToMySQL {
     private $oldData = 0;
     private $newData = 0;
     private $error_array = [];
+    private $skeep = false;
 
     function __construct($dbh) {
         $this->dbh = $dbh;
@@ -54,6 +55,7 @@ class ExcelToMySQL {
         for($j = $rowIndex ; $j <= $highestRow; $j++){
         // for($j = $rowIndex ; $j <= $rowIndex; $j++){
             $start = microtime(true);
+            $this->skeep = false;
             // echo "第".$j."行資料, ";
             if ( trim($this->activeSheet->getCell("H"."$j")->getValue()) == "" ){
                 $error_array[] = $j;
@@ -61,55 +63,29 @@ class ExcelToMySQL {
             }
 
             $SalesObj = $this->CreateSalesObject();
-            $StoreObj = $this->CreateStoresObject();
             try {
                 // 抓取業務表格資料
                 $this->getSalesData($SalesObj, $this->activeSheet, $j);
 
-                // 檢查店家代碼是否已存在，新增或更新後取回 sales_id 再給店家表格用
-                $checkObj = new stdClass();
-                $checkObj->store_num = $SalesObj->store_num;
-                $sales_id = $this->CheckAndInsert($salesDB, $checkObj, $SalesObj);
-                // echo "sales_id = ".$sales_id.", ";
-                $salesDB->updateGeomPoint($sales_id, 'location', $SalesObj->lat, $SalesObj->lng);
+                if (!$this->skeep) {
+                    $sales_id = $this->processOneSalesData($salesDB, $SalesObj);
+                    $store_id = $this->processOneStoreData($storeDB, $SalesObj, $sales_id);
 
-                // 設定要存到店家表格的資料
-                $this->setStoreData($StoreObj, $SalesObj, $sales_id);
+                    // 新增 店家<->餐廳類型 關聯表
+                    $this->updateStoreCategory($store_id, $this->activeSheet, $j);
+                    // 新增 店家<->標籤 關聯表
+                    $this->updateStorePick($store_id, $this->activeSheet, $j);
 
-                $checkObj = new stdClass();
-                $checkObj->id = $sales_id;
-                $store_id = $this->CheckAndInsert($storeDB, $checkObj, $StoreObj);
-                // echo "store_id = ".$store_id.", ";
-                $storeDB->updateGeomPoint($store_id, 'location', $StoreObj->lat, $StoreObj->lng);
-
-                if ( $this->isStoreActivate($SalesObj->status) == false){
-                    // echo "要刪除store_id = ".$store_id.", ";
-                    $storeDB->delete($store_id);
+                    $rCount++;
                 }
-
-                // 新增 店家<->餐廳類型 關聯表
-                $this->updateStoreCategory($store_id, $this->activeSheet, $j);
-
-                // 新增 店家<->標籤 關聯表
-                $this->updateStorePick($store_id, $this->activeSheet, $j);
-
-                $rCount++;
-                unset($checkObj);
             } catch (Exception $e) {
                 $error_array[] = $j;
             }
 
-            // echo "<pre> 店家表格<br>";
-            // var_dump($StoreObj);
-            // echo "</pre>";
-            // echo "<pre> 業務表格<br>";
-            // var_dump($SalesObj);
-            // echo "</pre>";
             $time_elapsed_us = microtime(true) - $start;
             // echo "處理第".$j."行資料，總共花費時間 = ".$time_elapsed_us.", 休息0.3秒 <br>";
             unset($SalesObj);
-            unset($StoreObj);
-            usleep(300000);
+            usleep(200000);
         }
 
         unset($salesDB);
@@ -126,6 +102,39 @@ class ExcelToMySQL {
             echo "</pre>";
         }
         echo "<br>";
+    }
+
+    function processOneSalesData($salesDB, $SalesObj) {
+        // 檢查店家代碼是否已存在，新增或更新後取回 sales_id 再給店家表格用
+        $checkObj = new stdClass();
+        $checkObj->store_num = $SalesObj->store_num;
+        $sales_id = $this->CheckAndInsert($salesDB, $checkObj, $SalesObj);
+        // echo "sales_id = ".$sales_id.", ";
+        $salesDB->updateGeomPoint($sales_id, 'location', $SalesObj->lat, $SalesObj->lng);
+
+        unset($checkObj);
+        return $sales_id;
+    }
+
+    function processOneStoreData($storeDB, $SalesObj, $sales_id) {
+        $StoreObj = $this->CreateStoresObject();
+        // 設定要存到店家表格的資料
+        $this->setStoreData($StoreObj, $SalesObj, $sales_id);
+
+        $checkObj = new stdClass();
+        $checkObj->id = $sales_id;
+        $store_id = $this->CheckAndInsert($storeDB, $checkObj, $StoreObj);
+        // echo "store_id = ".$store_id.", ";
+        $storeDB->updateGeomPoint($store_id, 'location', $StoreObj->lat, $StoreObj->lng);
+
+        if ( $this->isStoreActivate($SalesObj->status) == false){
+            // echo "要刪除store_id = ".$store_id.", ";
+            $storeDB->delete($store_id);
+        }
+
+        unset($checkObj);
+        unset($StoreObj);
+        return $store_id;
     }
 
     /**
@@ -298,6 +307,9 @@ class ExcelToMySQL {
      */
     function checkIsDataError($SalesObj, $j) {
         $msg = "";
+        if ($SalesObj->store_num == "") {
+            $msg .= "缺少店家代碼, ";
+        }
         if ($SalesObj->status == "") {
             $msg .= "店家狀態有錯, ";
         }
@@ -310,8 +322,10 @@ class ExcelToMySQL {
         if ($SalesObj->price == -1) {
             $msg .= "價格區間有錯, ";
         }
-        if(strlen($msg) > 0)
+        if(strlen($msg) > 0){
             $this->error_array[] = "第".$j."行 ".substr($msg, 0, strlen($msg)-2);
+            $this->skeep = true;
+        }
     }
 
     /**

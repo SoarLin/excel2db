@@ -33,7 +33,7 @@
         $excelPath = getUploadFile();
         $extension_name = pathinfo($excelPath,PATHINFO_EXTENSION);
 
-        echo "上傳一份Excel資料，花費時間 = ".(microtime(true) - $start)."<br>";
+        echo "上傳一份檔案，花費時間 = ".(microtime(true) - $start)."<br>";
 
         if ($extension_name == "xlsx" || $extension_name == "xls") {
             $read_start = microtime(true);
@@ -51,7 +51,7 @@
             "<span aria-hidden=\"true\">&times;</span></button><strong>錯誤! </strong> 請上傳檔案Excel檔案</div></div>";
         }
         $time_elapsed_us = microtime(true) - $start;
-        echo "處理這份Excel資料，總共花費時間 = ".$time_elapsed_us."<br>";
+        echo "處理這份檔案，總共花費時間 = ".$time_elapsed_us."<br>";
     }
 
     // $date = "03-30-13";
