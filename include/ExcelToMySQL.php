@@ -49,7 +49,7 @@ class ExcelToMySQL {
         echo "分頁名稱 [".$this->sheetName."], 最高行數 = ".$highestRow."(只讀取前100筆資料)<br/>";
         //手動設定讀取範圍
         if($highestRow > 102)
-            $highestRow = 102   ;
+            $highestRow = 102;
 
         for($j = $rowIndex ; $j <= $highestRow; $j++){
         // for($j = $rowIndex ; $j <= $rowIndex; $j++){
@@ -94,6 +94,7 @@ class ExcelToMySQL {
                 $this->updateStorePick($store_id, $this->activeSheet, $j);
 
                 $rCount++;
+                unset($checkObj);
             } catch (Exception $e) {
                 $error_array[] = $j;
             }
@@ -106,8 +107,13 @@ class ExcelToMySQL {
             // echo "</pre>";
             $time_elapsed_us = microtime(true) - $start;
             // echo "處理第".$j."行資料，總共花費時間 = ".$time_elapsed_us.", 休息0.3秒 <br>";
+            unset($SalesObj);
+            unset($StoreObj);
             usleep(300000);
         }
+
+        unset($salesDB);
+        unset($storeDB);
 
         echo "處理總比數：".$rCount.", ";
         echo "新增次數(與資料比數無關)：".$this->newData.", ";

@@ -14,8 +14,7 @@
         $excelPath = getUploadFile();
         $extension_name = pathinfo($excelPath,PATHINFO_EXTENSION);
 
-        $upload_time = microtime(true);
-        echo "上傳一份Excel資料，花費時間 = ".($upload_time - $start)."<br>";
+        echo "上傳一份Excel資料，花費時間 = ".(microtime(true) - $start)."<br>";
 
         if ($extension_name == "xlsx" || $extension_name == "xls") {
             $read_start = microtime(true);
