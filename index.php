@@ -17,6 +17,49 @@
 </head>
 
 <body>
+  <nav class="navbar navbar-inverse navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+          <span class="sr-only">導航切換</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="#">Excel 匯入</a>
+      </div>
+      <div id="navbar" class="navbar-collapse collapse">
+        <ul class="nav navbar-nav navbar-right">
+          <li><a href="#">關於食我</a></li>
+          <li><a href="#">聯絡我們</a></li>
+        </ul>
+      </div><!--/.navbar-collapse -->
+    </div>
+  </nav>
+
+  <div class="container main-field">
+    <form class="row" name="uploadForm" method="post" action="index.php" enctype="multipart/form-data">
+      <div class="col-md-10">
+        <div class="fileinput fileinput-new input-group" data-provides="fileinput" data-name="userfile">
+          <div class="form-control" data-trigger="fileinput">
+            <i class="glyphicon glyphicon-file fileinput-exists"></i>
+            <span class="fileinput-filename"></span>
+          </div>
+          <span class="input-group-addon btn btn-default btn-file">
+            <span class="fileinput-new">Select file</span>
+            <span class="fileinput-exists">Change</span>
+            <input type="file" name="userfile">
+          </span>
+          <a href="#" class="input-group-addon btn btn-default fileinput-exists" data-dismiss="fileinput">Remove</a>
+        </div>
+      </div>
+      <div class="col-md-2">
+        <button type="submit" class="btn btn-primary btn-block">確認上傳</button>
+      </div>
+    </form>
+
+  </div>
+
 <?php
     require_once 'include/config.php';
     require_once 'include/ExcelToMySQL.php';
@@ -33,25 +76,25 @@
         $excelPath = getUploadFile();
         $extension_name = pathinfo($excelPath,PATHINFO_EXTENSION);
 
-        echo "上傳一份檔案，花費時間 = ".(microtime(true) - $start)."<br>";
+        echo "<p>上傳一份檔案，花費時間 = ".(microtime(true) - $start)."</p>";
 
         if ($extension_name == "xlsx" || $extension_name == "xls") {
             $read_start = microtime(true);
             $excelHandler->setExcelFile($excelPath);
             $time_elapsed_us = microtime(true) - $read_start;
-            echo "讀取一份Excel資料，花費時間 = ".$time_elapsed_us."<br>";
+            echo "<p>讀取一份Excel資料，花費時間 = ".$time_elapsed_us."</p>";
 
             $handle_start = microtime(true);
             $excelHandler->handleExcelFile();
             $time_elapsed_us = microtime(true) - $handle_start;
-            echo "處理一份Excel資料，花費時間 = ".$time_elapsed_us."<br>";
+            echo "<p>處理一份Excel資料，花費時間 = ".$time_elapsed_us."</p>";
         } else {
             echo "<div class=\"my-alert text-center\"><div class=\"alert alert-danger alert-dismissible\" role=\"alert\">".
             "<button type=\"button\" class=\"close\" data-dismiss=\"alert\" aria-label=\"Close\">".
             "<span aria-hidden=\"true\">&times;</span></button><strong>錯誤! </strong> 請上傳檔案Excel檔案</div></div>";
         }
         $time_elapsed_us = microtime(true) - $start;
-        echo "處理這份檔案，總共花費時間 = ".$time_elapsed_us."<br>";
+        echo "<p>處理這份檔案，總共花費時間 = ".$time_elapsed_us."</p>";
     }
 
     // $date = "03-30-13";
@@ -100,49 +143,6 @@ function getUploadFile() {
 }
 
 ?>
-  <nav class="navbar navbar-inverse navbar-fixed-top">
-    <div class="container">
-      <div class="navbar-header">
-        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
-          <span class="sr-only">導航切換</span>
-          <span class="icon-bar"></span>
-          <span class="icon-bar"></span>
-          <span class="icon-bar"></span>
-        </button>
-        <a class="navbar-brand" href="#">Excel 匯入</a>
-      </div>
-      <div id="navbar" class="navbar-collapse collapse">
-        <ul class="nav navbar-nav navbar-right">
-          <li><a href="#">關於食我</a></li>
-          <li><a href="#">聯絡我們</a></li>
-        </ul>
-      </div><!--/.navbar-collapse -->
-    </div>
-  </nav>
-
-  <div class="container main-field">
-    <form class="row" name="uploadForm" method="post" action="index.php" enctype="multipart/form-data">
-      <div class="col-md-10">
-        <div class="fileinput fileinput-new input-group" data-provides="fileinput" data-name="userfile">
-          <div class="form-control" data-trigger="fileinput">
-            <i class="glyphicon glyphicon-file fileinput-exists"></i>
-            <span class="fileinput-filename"></span>
-          </div>
-          <span class="input-group-addon btn btn-default btn-file">
-            <span class="fileinput-new">Select file</span>
-            <span class="fileinput-exists">Change</span>
-            <input type="file" name="userfile">
-          </span>
-          <a href="#" class="input-group-addon btn btn-default fileinput-exists" data-dismiss="fileinput">Remove</a>
-        </div>
-      </div>
-      <div class="col-md-2">
-        <button type="submit" class="btn btn-primary btn-block">確認上傳</button>
-      </div>
-    </form>
-
-  </div>
-
 
   <script src="components/jquery/dist/jquery.min.js"></script>
   <script src="components/bootstrap/dist/js/bootstrap.min.js"></script>

@@ -47,7 +47,7 @@ class ExcelToMySQL {
         $rCount = 0;
 
         $highestRow = $this->activeSheet->getHighestRow();
-        echo "分頁名稱 [".$this->sheetName."], 最高行數 = ".$highestRow."(只讀取前100筆資料)<br/>";
+        echo "<p>分頁名稱 [".$this->sheetName."], 最高行數 = ".$highestRow."(只讀取前100筆資料)</p>";
         //手動設定讀取範圍
         if($highestRow > 102)
             $highestRow = 102;
@@ -91,9 +91,9 @@ class ExcelToMySQL {
         unset($salesDB);
         unset($storeDB);
 
-        echo "處理總比數：".$rCount.", ";
+        echo "<p>處理總比數：".$rCount.", ";
         echo "新增次數(與資料比數無關)：".$this->newData.", ";
-        echo "更新次數(與資料比數無關)：".$this->oldData.", ";
+        echo "更新次數(與資料比數無關)：".$this->oldData."</p>";
         if (count($this->error_array) > 0) {
             echo "<pre>";
             foreach ($this->error_array as $i => $v) {
