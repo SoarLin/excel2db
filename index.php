@@ -1,3 +1,22 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+  <meta name="description" content="">
+  <meta name="keywords" content="">
+  <meta name="author" content="Soar">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <!-- <link rel="icon" href="images/favicons/favicon.ico?v=1"> -->
+  <title>店家Excel檔匯入資料庫</title>
+
+  <link rel="stylesheet" href="components/bootstrap/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="components/jasny-bootstrap/dist/css/jasny-bootstrap.min.css">
+
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
 <?php
     require_once 'include/config.php';
     require_once 'include/ExcelToMySQL.php';
@@ -81,25 +100,6 @@ function getUploadFile() {
 }
 
 ?>
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=Edge">
-  <meta name="description" content="">
-  <meta name="keywords" content="">
-  <meta name="author" content="Soar">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <!-- <link rel="icon" href="images/favicons/favicon.ico?v=1"> -->
-  <title>店家Excel檔匯入資料庫</title>
-
-  <link rel="stylesheet" href="components/bootstrap/dist/css/bootstrap.min.css">
-  <link rel="stylesheet" href="components/jasny-bootstrap/dist/css/jasny-bootstrap.min.css">
-
-  <link rel="stylesheet" href="css/style.css">
-</head>
-
-<body>
   <nav class="navbar navbar-inverse navbar-fixed-top">
     <div class="container">
       <div class="navbar-header">
