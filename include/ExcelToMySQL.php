@@ -109,15 +109,15 @@ class ExcelToMySQL {
             usleep(300000);
         }
 
-        echo "總比數：".$rCount.", ";
-        echo "新增次數：".$this->newData.", ";
-        echo "更新次數：".$this->oldData.", ";
+        echo "處理總比數：".$rCount.", ";
+        echo "新增次數(與資料比數無關)：".$this->newData.", ";
+        echo "更新次數(與資料比數無關)：".$this->oldData.", ";
         if (count($this->error_array) > 0) {
-            $temp = "";
+            echo "<pre>";
             foreach ($this->error_array as $i => $v) {
-                $temp .= $v."<br>";
+                echo "錯誤資料 = ". $v."<br>";
             }
-            echo "錯誤資料 = ". $temp;
+            echo "</pre>";
         }
         echo "<br>";
     }
@@ -187,6 +187,13 @@ class ExcelToMySQL {
         $this->checkIsDataError($SalesObj, $j);
     }
 
+    /**
+     * 設定 stores 表格中資料
+     * @param &stdClass 店家物件參考位址
+     * @param stdClass 業務表格資料
+     * @param int sales_id
+     * @return none
+     */
     function setStoreData(&$StoreObj, $SalesObj, $sales_id) {
         $StoreObj->id            = $sales_id;
         $StoreObj->store_num     = $SalesObj->store_num;
@@ -232,7 +239,13 @@ class ExcelToMySQL {
         }
     }
 
-
+    /**
+     * 更新 餐廳-標籤 關聯表
+     * @param int 餐廳ID
+     * @param SheetData 正在處理的Excel分頁
+     * @param int 整在處理行數
+     * @return none
+     */
     function updateStorePick($store_id, $activeSheet, $j) {
         $StorePickDB = new StorePickDB($this->dbh);
         $storePickObj = new stdClass();
@@ -249,6 +262,13 @@ class ExcelToMySQL {
         }
     }
 
+    /**
+     * 更新 餐廳-種類 關聯表
+     * @param int 餐廳ID
+     * @param SheetData 正在處理的Excel分頁
+     * @param int 整在處理行數
+     * @return none
+     */
     function updateStoreCategory($store_id, $activeSheet, $j) {
         $storeCategooryDB = new StoreCategoryDB($this->dbh);
         $storeCateObj = new stdClass();
@@ -264,6 +284,12 @@ class ExcelToMySQL {
         }
     }
 
+    /**
+     * 檢查資料是否有錯誤
+     * @param stdClass 業務物件
+     * @param int 整在處理行數
+     * @return none
+     */
     function checkIsDataError($SalesObj, $j) {
         $msg = "";
         if ($SalesObj->status == "") {
@@ -334,6 +360,11 @@ class ExcelToMySQL {
         return $cid;
     }
 
+    /**
+     * 取得餐廳狀態id
+     * @param string 餐廳狀態字串
+     * @return cid 餐廳狀態id
+     */
     function getStatusID($status_str) {
         $cid = "";
         $code = explode(" ", $status_str)[0];
@@ -363,6 +394,11 @@ class ExcelToMySQL {
         return $temp;
     }
 
+    /**
+     * 設定日期為MySQL接受格式
+     * @param date_str PHPEXcel讀出日期字串, e.g. "41363"
+     * @return date 時間格式
+     */
     function setMySQLDATETIME($date) {
         $date = PHPExcel_Style_NumberFormat::toFormattedString($date, 'YYYY-MM-DD');
         // echo "日期 = ".$date.", ";
