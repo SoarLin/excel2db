@@ -165,7 +165,7 @@ class ExcelToMySQL {
         $city = trim($activeSheet->getCell("K"."$j")->getValue());
         $area = trim($activeSheet->getCell("L"."$j")->getValue());
         $SalesObj->city_id       = $this->getCityID($city);
-        $SalesObj->area_id       = $this->getAreaID($area);
+        $SalesObj->area_id       = $this->getAreaID($SalesObj->city_id, $area);
         $SalesObj->address       = trim( $activeSheet->getCell("M"."$j")->getValue() );
         $this->setLongLat($city, $area, $SalesObj);
         // 電話
@@ -530,11 +530,12 @@ class ExcelToMySQL {
      * @param area 行政區名稱
      * @return area_id
      */
-    function getAreaID($area) {
+    function getAreaID($city_id, $area) {
         $id = "";
 
-        $sql = "SELECT * FROM `area_data` WHERE title = :title";
+        $sql = "SELECT * FROM `area_data` WHERE city_id = :city_id AND title = :title";
         $stmt = $this->dbh->prepare($sql);
+        $stmt->bindParam(':city_id', $city_id, PDO::PARAM_STR);
         $stmt->bindParam(':title', $area, PDO::PARAM_STR);
         $stmt->execute();
         while($row = $stmt->fetch()) {
