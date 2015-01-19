@@ -214,7 +214,7 @@ class ExcelToMySQL {
         $StoreObj->store_num     = $SalesObj->store_num;
         $StoreObj->name          = $SalesObj->name;
         $StoreObj->branch        = $SalesObj->branch;
-        $StoreObj->uuid          = "NoImage.jpg";
+        $StoreObj->cover_uuid    = "NoImage";
         $StoreObj->tel           = $SalesObj->phone;
         $StoreObj->city_id       = $SalesObj->city_id;
         $StoreObj->area_id       = $SalesObj->area_id;
