@@ -214,6 +214,7 @@ class ExcelToMySQL {
         $StoreObj->store_num     = $SalesObj->store_num;
         $StoreObj->name          = $SalesObj->name;
         $StoreObj->branch        = $SalesObj->branch;
+        $StoreObj->uuid          = "NoImage.jpg";
         $StoreObj->tel           = $SalesObj->phone;
         $StoreObj->city_id       = $SalesObj->city_id;
         $StoreObj->area_id       = $SalesObj->area_id;
@@ -223,7 +224,7 @@ class ExcelToMySQL {
         $StoreObj->operate_time  = $SalesObj->operate_time;
         $StoreObj->rest_time     = $SalesObj->rest_time;
         $StoreObj->price         = $SalesObj->price;
-        $StoreObj->status        = "published";
+        $StoreObj->status        = "pending";
         $StoreObj->start_date    = $SalesObj->start_date;
         $StoreObj->end_date      = $SalesObj->end_date;
     }
