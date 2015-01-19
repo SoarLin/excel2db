@@ -6,7 +6,7 @@
         $server_url = $_SERVER['SERVER_NAME'];
         if ($server_url == "soar.eatme.tw") {
             $db_host = 'eatmedb.cgcvau6esuvd.ap-northeast-1.rds.amazonaws.com';
-            $db_name = 'eatmeApp';
+            $db_name = 'eatme_app_dev';
             $db_user = 'eatmedev';
             $db_pass = 'eatmedev';
         } else if ($server_url == "localhost") {
