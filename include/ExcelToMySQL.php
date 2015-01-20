@@ -57,9 +57,9 @@ class ExcelToMySQL {
             $start = microtime(true);
             $this->skeep = false;
             // echo "第".$j."行資料, ";
-            if ( trim($this->activeSheet->getCell("H"."$j")->getValue()) == "" ){
-                $error_array[] = $j;
-                break;
+            if ( trim($this->activeSheet->getCell("I"."$j")->getValue()) == "" ) {
+                $this->error_array[] = "第".$j."行 沒有店家名稱";
+                continue;
             }
 
             $SalesObj = $this->CreateSalesObject();
@@ -85,7 +85,7 @@ class ExcelToMySQL {
             $time_elapsed_us = microtime(true) - $start;
             // echo "處理第".$j."行資料，總共花費時間 = ".$time_elapsed_us.", 休息0.3秒 <br>";
             unset($SalesObj);
-            usleep(200000);
+            usleep(300000);
         }
 
         unset($salesDB);
@@ -167,6 +167,7 @@ class ExcelToMySQL {
         $SalesObj->city_id       = $this->getCityID($city);
         $SalesObj->area_id       = $this->getAreaID($SalesObj->city_id, $area);
         $SalesObj->address       = trim( $activeSheet->getCell("M"."$j")->getValue() );
+        // echo "city = ".$city.", area = ".$area."<br>";
         $this->setLongLat($city, $area, $SalesObj);
         // 電話
         $SalesObj->phone         = trim( $activeSheet->getCell("N"."$j")->getValue() );
@@ -198,6 +199,11 @@ class ExcelToMySQL {
         $SalesObj->summary       = trim( $activeSheet->getCell("AV"."$j")->getValue() );
         // 店家簽約人
         $SalesObj->sign_man      = trim( $activeSheet->getCell("AW"."$j")->getValue() );
+
+        if($this->checkStorePhoneIsExist($SalesObj->phone) == ""){
+            $SalesObj->store_num = $this->regetStoreNum($SalesObj->store_num,
+                                $city.$area.$SalesObj->address, $SalesObj->phone);
+        }
 
         $this->checkIsDataError($SalesObj, $j);
     }
@@ -309,7 +315,7 @@ class ExcelToMySQL {
     function checkIsDataError($SalesObj, $j) {
         $msg = "";
         if ($SalesObj->store_num == "") {
-            $msg .= "缺少店家代碼, ";
+            $msg .= "無法產生店家代碼, ";
         }
         if ($SalesObj->status == "") {
             $msg .= "店家狀態有錯, ";
@@ -558,10 +564,14 @@ class ExcelToMySQL {
         $url = "http://maps.google.com/maps/api/geocode/json?address=".$full_address."&sensor=false&region=TW";
         $response = file_get_contents($url);
         $response = json_decode($response, true);
-        // 經度
-        $SalesObj->lng = $response['results'][0]['geometry']['location']['lng'];
-        // 緯度
-        $SalesObj->lat = $response['results'][0]['geometry']['location']['lat'];
+        if ($response['status'] == "OK") {
+            // 經度
+            $SalesObj->lng = $response['results'][0]['geometry']['location']['lng'];
+            // 緯度
+            $SalesObj->lat = $response['results'][0]['geometry']['location']['lat'];
+        } else {
+            echo "抓取經緯度有誤, url = ".$url."<br>";
+        }
     }
 
     function getZIPCode($address) {
@@ -573,6 +583,53 @@ class ExcelToMySQL {
         } else {
             return $zipcode;
         }
+    }
+
+    function regetStoreNum($store_num, $address, $phone) {
+        $regex = '/^TW[0-9]{10}$/';
+        if (preg_match($regex, $store_num)){
+            return $store_num;
+        } else {
+            $zipcode = $this->getZIPCode($address);
+            if ($zipcode == false){
+                return "";
+            } else {
+                return $this->createStoreNum("TW".$zipcode);
+            }
+        }
+    }
+
+    function checkStorePhoneIsExist($phone) {
+        $id = "";
+        $sql = "SELECT * FROM `sales` WHERE phone = :phone";
+        $stmt = $this->dbh->prepare($sql);
+        $stmt->bindParam(':phone', $phone, PDO::PARAM_STR);
+        $stmt->execute();
+        while($row = $stmt->fetch()) {
+            $id = $row['id'];
+            // echo "ID = ".$id."<br>";
+        }
+        return ($id != "") ? true : false;
+    }
+
+    function createStoreNum($pre_store_num) {
+        $sql = "SELECT * FROM `sales` WHERE store_num LIKE ? ORDER BY store_num DESC LIMIT 1";
+        $params = array($pre_store_num."%");
+        $stmt = $this->dbh->prepare($sql);
+        $stmt->execute($params);
+        while($row = $stmt->fetch()) {
+            $store_num = $row['store_num'];
+            // echo "最大的 store_num = ".$store_num."<br>";
+        }
+
+        return $this->getNextStoreNum($store_num);
+    }
+
+    function getNextStoreNum($store_num) {
+        $serial_num = substr($store_num, 7);
+        $next_sn = str_pad($serial_num+1, 5, '0', STR_PAD_LEFT);
+        $next_store_num = substr($store_num, 0, 7).$next_sn;
+        return $next_store_num;
     }
 
     /**
