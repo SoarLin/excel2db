@@ -231,8 +231,8 @@ class ExcelToMySQL {
         $StoreObj->rest_time     = $SalesObj->rest_time;
         $StoreObj->price         = $SalesObj->price;
         $StoreObj->status        = "pending";
-        $StoreObj->start_date    = $SalesObj->start_date;
-        $StoreObj->end_date      = $SalesObj->end_date;
+        // $StoreObj->start_date    = $SalesObj->start_date;
+        // $StoreObj->end_date      = $SalesObj->end_date;
     }
 
     /**
