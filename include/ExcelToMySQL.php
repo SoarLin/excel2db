@@ -180,25 +180,27 @@ class ExcelToMySQL {
         $SalesObj->facebook      = $this->validateURL(trim( $activeSheet->getCell("R"."$j")->getValue()), "FB");
         // 受訪意願
         $SalesObj->interview     = $this->checkInterviewStatus( trim($activeSheet->getCell("S"."$j")->getValue()) );
+        // 優惠價值
+        $SalesObj->discount_price= trim( $activeSheet->getCell("U"."$j")->getValue() );
         // 店家聯絡人, 職稱, 電話, 手機, email
-        $SalesObj->contact       = trim( $activeSheet->getCell("U"."$j")->getValue() );
-        $SalesObj->contact_title = trim( $activeSheet->getCell("V"."$j")->getValue() );
-        $SalesObj->contact_phone = trim( $activeSheet->getCell("W"."$j")->getValue() );
-        $SalesObj->contact_mobile= trim( $activeSheet->getCell("X"."$j")->getValue() );
-        $SalesObj->contact_email = trim( $activeSheet->getCell("Y"."$j")->getValue() );
+        $SalesObj->contact       = trim( $activeSheet->getCell("V"."$j")->getValue() );
+        $SalesObj->contact_title = trim( $activeSheet->getCell("W"."$j")->getValue() );
+        $SalesObj->contact_phone = trim( $activeSheet->getCell("X"."$j")->getValue() );
+        $SalesObj->contact_mobile= trim( $activeSheet->getCell("Y"."$j")->getValue() );
+        $SalesObj->contact_email = trim( $activeSheet->getCell("Z"."$j")->getValue() );
         // 客均價
-        $SalesObj->price         = $this->getPriceRange( trim($activeSheet->getCell("AF"."$j")->getValue()) );
-        // 付款方式
-        $SalesObj->pay_way       = trim( $activeSheet->getCell("AG"."$j")->getValue() );
+        $SalesObj->price         = $this->getPriceRange( trim($activeSheet->getCell("AG"."$j")->getValue()) );
+        // 收費方式
+        $SalesObj->pay_way       = trim( $activeSheet->getCell("AH"."$j")->getValue() );
         // 發票抬頭, 統一編號, 發票類型, 發票寄送地址
-        $SalesObj->invoice_title = trim( $activeSheet->getCell("AI"."$j")->getValue() );
-        $SalesObj->invoice_num   = trim( $activeSheet->getCell("AJ"."$j")->getValue() );
-        $SalesObj->invoice_type  = trim( $activeSheet->getCell("AK"."$j")->getValue() );
-        $SalesObj->invoice_address=trim( $activeSheet->getCell("AL"."$j")->getValue() );
+        $SalesObj->invoice_title = trim( $activeSheet->getCell("AJ"."$j")->getValue() );
+        $SalesObj->invoice_num   = trim( $activeSheet->getCell("AK"."$j")->getValue() );
+        $SalesObj->invoice_type  = trim( $activeSheet->getCell("AL"."$j")->getValue() );
+        $SalesObj->invoice_address=trim( $activeSheet->getCell("AM"."$j")->getValue() );
         // 店家描述
-        $SalesObj->summary       = trim( $activeSheet->getCell("AV"."$j")->getValue() );
+        $SalesObj->summary       = trim( $activeSheet->getCell("AW"."$j")->getValue() );
         // 店家簽約人
-        $SalesObj->sign_man      = trim( $activeSheet->getCell("AW"."$j")->getValue() );
+        $SalesObj->sign_man      = trim( $activeSheet->getCell("AX"."$j")->getValue() );
 
         if($this->checkStorePhoneIsExist($SalesObj->phone) == ""){
             $SalesObj->store_num = $this->regetStoreNum($SalesObj->store_num,
@@ -220,7 +222,7 @@ class ExcelToMySQL {
         $StoreObj->store_num     = $SalesObj->store_num;
         $StoreObj->name          = $SalesObj->name;
         $StoreObj->branch        = $SalesObj->branch;
-        $StoreObj->cover_uuid    = "NoImage";
+        $StoreObj->cover_uuid    = "NoImage.png";
         $StoreObj->tel           = $SalesObj->phone;
         $StoreObj->city_id       = $SalesObj->city_id;
         $StoreObj->area_id       = $SalesObj->area_id;
@@ -273,7 +275,7 @@ class ExcelToMySQL {
         $storePickObj = new stdClass();
         $storePickObj->store_id = $store_id;
 
-        $pick_index = ["AA", "AC", "AE"];
+        $pick_index = ["AB", "AD", "AF"];
         foreach ($pick_index as $i => $val) {
             $pick_str = trim($activeSheet->getCell($val.$j)->getValue());
             if (strlen($pick_str) > 0) {
@@ -296,7 +298,7 @@ class ExcelToMySQL {
         $storeCateObj = new stdClass();
         $storeCateObj->store_id = $store_id;
 
-        $category_index = ["Z", "AB", "AD"];
+        $category_index = ["AA", "AC", "AE"];
         foreach ($category_index as $i => $val) {
             $category_str = trim($activeSheet->getCell($val.$j)->getValue());
             if (strlen($category_str) > 0){
