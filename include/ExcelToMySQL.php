@@ -123,13 +123,18 @@ class ExcelToMySQL {
 
         $checkObj = new stdClass();
         $checkObj->id = $sales_id;
-        $store_id = $this->CheckAndInsert($storeDB, $checkObj, $StoreObj);
-        // echo "store_id = ".$store_id.", ";
-        $storeDB->updateGeomPoint($store_id, 'location', $StoreObj->lat, $StoreObj->lng);
+        $store_id = $storeDB->getIdByData($checkObj);
 
-        if ( $this->isStoreActivate($SalesObj->status) == false){
-            // echo "要刪除store_id = ".$store_id.", ";
-            $storeDB->delete($store_id);
+        if (!$store_id) {
+            // $store_id = $this->CheckAndInsert($storeDB, $checkObj, $StoreObj);
+            $store_id = $storeDB->insert($StoreObj);
+            // echo "store_id = ".$store_id.", ";
+            $storeDB->updateGeomPoint($store_id, 'location', $StoreObj->lat, $StoreObj->lng);
+
+            if ( $this->isStoreActivate($SalesObj->status) == false){
+                // echo "要刪除store_id = ".$store_id.", ";
+                $storeDB->delete($store_id);
+            }
         }
 
         unset($checkObj);
