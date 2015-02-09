@@ -624,9 +624,14 @@ class ExcelToMySQL {
         $params = array($pre_store_num."%");
         $stmt = $this->dbh->prepare($sql);
         $stmt->execute($params);
+        $store_num = '';
         while($row = $stmt->fetch()) {
             $store_num = $row['store_num'];
             // echo "最大的 store_num = ".$store_num."<br>";
+        }
+
+        if (strlen($store_num) == 0) {
+            $store_num = $pre_store_num."00000";
         }
 
         return $this->getNextStoreNum($store_num);
