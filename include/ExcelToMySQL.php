@@ -602,7 +602,7 @@ class ExcelToMySQL {
         }
     }
 
-    function regetStoreNum`($store_num, $address) {
+    function regetStoreNum($store_num, $address) {
         $regex = '/^TW[0-9]{10}$/';
         if (preg_match($regex, $store_num)){
             return $store_num;
