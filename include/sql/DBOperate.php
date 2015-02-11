@@ -38,10 +38,12 @@
                 $sqlb = ") VALUES (";
                 $args = array();
                 foreach($obj as $key => $value){
-                    $sqla .= "`". $key ."`,";
-                    $sqlb .= "?,";
-                    // $sqlb .= "'$value',";
-                    array_push($args, $value);
+                    if (strlen($value) > 0) {
+                        $sqla .= "`". $key ."`,";
+                        $sqlb .= "?,";
+                        // $sqlb .= "'$value',";
+                        array_push($args, $value);
+                    }
                 }
                 $sqla = substr($sqla, 0, strlen($sqla)-1);
                 $sqlb = substr($sqlb, 0, strlen($sqlb)-1). ");";

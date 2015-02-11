@@ -172,7 +172,9 @@ class ExcelToMySQL {
         $SalesObj->city_id       = $this->getCityID($city);
         $SalesObj->area_id       = $this->getAreaID($SalesObj->city_id, $area);
         $SalesObj->address       = trim( $activeSheet->getCell("M"."$j")->getValue() );
+        $SalesObj->address       = str_replace(" ", "", $SalesObj->address);
         // echo "city = ".$city.", area = ".$area."<br>";
+
         $this->setLongLat($city, $area, $SalesObj);
         // 電話
         $SalesObj->phone         = trim( $activeSheet->getCell("N"."$j")->getValue() );
@@ -208,8 +210,9 @@ class ExcelToMySQL {
         $SalesObj->sign_man      = trim( $activeSheet->getCell("AX"."$j")->getValue() );
 
         if($this->checkStorePhoneIsExist($SalesObj->phone) == ""){
+            // 有店家電話，重新產生店家代碼
             $SalesObj->store_num = $this->regetStoreNum($SalesObj->store_num,
-                                $city.$area.$SalesObj->address, $SalesObj->phone);
+                                $city.$area.$SalesObj->address);
         }
 
         $this->checkIsDataError($SalesObj, $j);
@@ -335,6 +338,9 @@ class ExcelToMySQL {
         }
         if ($SalesObj->price == -1) {
             $msg .= "價格區間有錯, ";
+        }
+        if ($SalesObj->lng == NULL || $SalesObj->lat == NULL) {
+            $msg .= "經位度抓不到, ";
         }
         if(strlen($msg) > 0){
             $this->error_array[] = "第".$j."行 ".substr($msg, 0, strlen($msg)-2);
@@ -569,15 +575,19 @@ class ExcelToMySQL {
     function setLongLat($city, $area, &$SalesObj) {
         $full_address = $city.$area.$SalesObj->address;
         $url = "http://maps.google.com/maps/api/geocode/json?address=".$full_address."&sensor=false&region=TW";
-        $response = file_get_contents($url);
-        $response = json_decode($response, true);
-        if ($response['status'] == "OK") {
-            // 經度
-            $SalesObj->lng = $response['results'][0]['geometry']['location']['lng'];
-            // 緯度
-            $SalesObj->lat = $response['results'][0]['geometry']['location']['lat'];
-        } else {
-            echo "抓取經緯度有誤, url = ".$url."<br>";
+        try {
+            $response = file_get_contents($url);
+            $response = json_decode($response, true);
+            if ($response['status'] == "OK") {
+                // 經度
+                $SalesObj->lng = $response['results'][0]['geometry']['location']['lng'];
+                // 緯度
+                $SalesObj->lat = $response['results'][0]['geometry']['location']['lat'];
+            } else {
+                echo "抓取經緯度有誤, url = ".$url."<br>";
+            }
+        } catch (Exception $e) {
+            echo $e->getMessage();
         }
     }
 
@@ -592,7 +602,7 @@ class ExcelToMySQL {
         }
     }
 
-    function regetStoreNum($store_num, $address, $phone) {
+    function regetStoreNum`($store_num, $address) {
         $regex = '/^TW[0-9]{10}$/';
         if (preg_match($regex, $store_num)){
             return $store_num;
