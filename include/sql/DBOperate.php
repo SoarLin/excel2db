@@ -106,8 +106,10 @@
                 $sqla = "UPDATE `". $this->table ."` SET ";
                 $args = array();
                 foreach($obj as $key => $value){
-                    $sqla .= "`". $key ."` = ?,";
-                    array_push($args, $value);
+                    if (strlen($value) > 0) {
+                        $sqla .= "`". $key ."` = ?,";
+                        array_push($args, $value);
+                    }
                 }
                 $sqla = substr($sqla, 0, strlen($sqla)-1). " WHERE `" . $this->idName . "` = ?";
                 array_push($args, $id);
