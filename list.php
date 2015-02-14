@@ -37,69 +37,69 @@
   </nav>
 
   <div class="container main-field">
-    <form class="row" name="uploadForm" method="post" action="index.php" enctype="multipart/form-data">
-      <div class="col-md-10">
-
+    <form class="row" name="uploadForm" method="post" action="list.php">
+      <div class="col-md-4">
+        <input type="text" name="name" class="form-control" placeholder="林O潤">
       </div>
       <div class="col-md-2">
         <button type="submit" class="btn btn-primary btn-block">確認送出</button>
       </div>
     </form>
 
-  </div>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>id</th>
+          <th>時間</th>
+          <th>姓名</th>
+          <th>電話</th>
+          <th>Email</th>
+          <th>備註</th>
+        </tr>
+      </thead>
+      <tbody>
 
 <?php
     require 'include/config.php';
     require 'include/sql/ListDB.php';
-    include 'include/Classes/PHPExcel.php';
     ini_set('date.timezone','Asia/Taipei');
 
-    // $PHPExcel = null;
-    // $insertCount = 0;
-    // $updateCount = 0;
     // $ListDB = new ListDB($devDB);
 
-    // $file = "Preorder20150212.xlsx";
-    // try {
-    //     $PHPExcel = PHPExcel_IOFactory::load($file);
-    // } catch(Exception $e) {
-    //     die('Error loading file "'.pathinfo($file,PATHINFO_BASENAME).'": '.$e->getMessage());
-    // }
-    // //讀取工作表分頁數
-    // $sheetCount = $PHPExcel->getSheetCount();
-    // //讀取第一個分頁資料, 分頁名稱
-    // $activeSheet = $PHPExcel->getSheet(0);
-    // $sheetName = $activeSheet->getTitle();
+    $name = @$_POST['name'];
+    if (isset($name)){
+        $result = checkInputName($name);
+        if(!$result) {
+            echo "輸入名稱有誤";
+        } else {
+            $sql = "SELECT * FROM `list` WHERE name LIKE :name";
+            $stmt = $devDB->prepare($sql);
+            $stmt->bindParam(':name', $result, PDO::PARAM_STR);
+            $stmt->execute();
+            while($row = $stmt->fetch()) {
+                echo "<tr>";
+                echo "<td>".$row['order_id']."</td>";
+                echo "<td>".$row['submit']."</td>";
+                echo "<td>".$row['name']."</td>";
+                echo "<td>".$row['phone']."</td>";
+                echo "<td>".$row['email']."</td>";
+                echo "<td>".$row['note']."</td>";
+                echo "</tr>";
+            }
+        }
+    }
+?>
+        <!-- <tr>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+        </tr> -->
+      </tbody>
+    </table>
 
-    // $highestRow = $activeSheet->getHighestRow();
-    // echo "<p>分頁名稱 [".$sheetName."], 最高行數 = ".$highestRow."</p>";
-
-    // $rowIndex = 2;
-    // // $highestRow = 10;
-    // for($j = $rowIndex ; $j <= $highestRow; $j++){
-    //     $ListObj = new stdClass();
-    //     $ListObj->order_id = trim($activeSheet->getCell("A"."$j")->getValue());
-    //     $ListObj->submit = setMySQLDATETIME($activeSheet->getCell("C"."$j")->getValue());
-    //     $ListObj->name = trim($activeSheet->getCell("D"."$j")->getValue());
-    //     $ListObj->email = trim($activeSheet->getCell("E"."$j")->getValue());
-    //     $ListObj->phone = trim($activeSheet->getCell("F"."$j")->getValue());
-    //     $ListObj->note = trim($activeSheet->getCell("G"."$j")->getValue());
-    //     // var_dump($ListObj);
-
-
-    //     if( $id = getListId($ListObj->email) ){
-    //         // update
-    //         $ListDB->update($id, $ListObj);
-    //         $updateCount++;
-    //     } else {
-    //         // insert
-    //         $id = $ListDB->insert($ListObj);
-    //         $insertCount++;
-    //     }
-    // }
-
-    // echo "新增資料筆數 : ".$insertCount."<br>";
-    // echo "更新資料筆數 : ".$updateCount."<br>";
+<?php
 
     function getListId($email){
         global $devDB;
@@ -117,6 +117,23 @@
         }
     }
 
+    function getUserByName($name) {
+        global $devDB;
+        $sql = "SELECT * FROM `list` WHERE name LIKE :name";
+        $stmt = $devDB->prepare($sql);
+        $stmt->bindParam(':name', $name, PDO::PARAM_STR);
+        $stmt->execute();
+        return $stmt->fetch();
+        // while($row = $stmt->fetch()) {
+        //     echo $row['name'];
+        // }
+        // if (isset($id)) {
+        //     return $id;
+        // } else {
+        //     return false;
+        // }
+    }
+
     function setMySQLDATETIME($date) {
         $date = trim($date);
         $date = PHPExcel_Style_NumberFormat::toFormattedString($date, 'YYYY-MM-DD hh:mm:ss');
@@ -126,9 +143,25 @@
         else
             return date("Y-m-d H:i:s", strtotime($date));
     }
+
+    // 張○○城
+    function checkInputName($name) {
+        // echo $name."<br>";
+        // echo strlen($name)."<br>";
+        if(strlen($name) < 6 || strlen($name) > 12) {
+            return false;
+        }
+        // echo strpos($name, "○")."<br>";
+        if(strpos($name, "○") != 3) {
+            return false;
+        }
+
+        $result = str_replace("○", "%", $name);
+        return $result;
+    }
 ?>
 
-
+  </div>
   <script src="components/jquery/dist/jquery.min.js"></script>
   <script src="components/bootstrap/dist/js/bootstrap.min.js"></script>
   <script src="components/jasny-bootstrap/dist/js/jasny-bootstrap.min.js"></script>
