@@ -7,9 +7,10 @@
     $PHPExcel = null;
     $insertCount = 0;
     $updateCount = 0;
+    $noPayCount  = 0;
     $CardDB = new CardOrderDB($devDB);
 
-    $file = "10312120075.xlsx";
+    $file = "10312120075_2.xlsx";
     try {
         $PHPExcel = PHPExcel_IOFactory::load($file);
     } catch(Exception $e) {
@@ -24,8 +25,9 @@
     $highestRow = $activeSheet->getHighestRow();
     echo "<p>分頁名稱 [".$sheetName."], 最高行數 = ".$highestRow."</p>";
 
-    $rowIndex = 2;
-    // $highestRow = 20;
+    // $rowIndex = 2;
+    $rowIndex = 240;
+    $highestRow = $rowIndex + 0;
     for($j = $rowIndex ; $j <= $highestRow; $j++){
     // for($j = $rowIndex ; $j <= $rowIndex; $j++){
 
@@ -48,24 +50,27 @@
         $CardObj->pay_date = setMySQLDATETIME($activeSheet->getCell("D"."$j")->getValue());
 
         // echo $CardObj->card_amount.":".$CardObj->amount."<br>";
-        // var_dump($CardObj);
 
         if ($CardObj->is_paid == 1){
             // checkAndInsert($CardObj);
+            var_dump($CardObj);
             if( $id = getCardOrderId($CardObj->eatme_no) ){
                 // update
-                $CardDB->update($id, $CardObj);
+                // $CardDB->update($id, $CardObj);
                 $updateCount++;
             } else {
                 // insert
                 $id = $CardDB->insert($CardObj);
                 $insertCount++;
             }
+        } else{
+            $noPayCount++;
         }
     }
 
     echo "新增資料筆數 : ".$insertCount."<br>";
     echo "更新資料筆數 : ".$updateCount."<br>";
+    echo "未付款筆數 : ".$noPayCount."<br>";
 
 
     function checkAndInsert($CardObj) {
@@ -108,6 +113,8 @@
         $first = substr($str, 0, 1);
         if ($first == "E"){
             return 1;
+        } else if ($first == "8") {
+            return 2;
         } else if ($first == "9") {
             return 3;
         } else if ($first == "4") {
@@ -143,4 +150,6 @@
         else
             return date("Y-m-d H:i:s", strtotime($date));
     }
+
+    closeDevDBConnection();
 ?>

@@ -38,10 +38,10 @@
 
   <div class="container main-field">
     <form class="row" name="uploadForm" method="post" action="list.php">
-      <div class="col-md-4">
-        <input type="text" name="name" class="form-control" placeholder="林O潤">
+      <div class="col-sm-4">
+        <input type="text" name="name" class="form-control" placeholder="林○君">
       </div>
-      <div class="col-md-2">
+      <div class="col-sm-2">
         <button type="submit" class="btn btn-primary btn-block">確認送出</button>
       </div>
     </form>
@@ -62,6 +62,7 @@
 <?php
     require 'include/config.php';
     require 'include/sql/ListDB.php';
+    require 'include/sql/CardOrderDB.php';
     ini_set('date.timezone','Asia/Taipei');
 
     // $ListDB = new ListDB($devDB);
@@ -86,6 +87,23 @@
                 echo "<td>".$row['note']."</td>";
                 echo "</tr>";
             }
+
+            $sql2 = "SELECT * FROM `card_order` WHERE username LIKE :name AND is_paid = 1";
+            $stmt2 = $devDB->prepare($sql2);
+            $stmt2->bindParam(':name', $result, PDO::PARAM_STR);
+            $stmt2->execute();
+            while($row2 = $stmt2->fetch()) {
+                echo "<tr class=\"info\">";
+                echo "<td>".$row2['id']."</td>";
+                echo "<td>付款日 ".$row2['pay_date']."</td>";
+                echo "<td>".$row2['username']."</td>";
+                echo "<td>".$row2['userphone']."</td>";
+                echo "<td>".$row2['useremail']."</td>";
+                echo "<td>".$row2['note1']."</td>";
+                echo "</tr>";
+            }
+            unset($row);
+            unset($row2);
         }
     }
 ?>
@@ -159,6 +177,8 @@
         $result = str_replace("○", "%", $name);
         return $result;
     }
+
+    closeDevDBConnection();
 ?>
 
   </div>
