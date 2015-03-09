@@ -209,8 +209,9 @@ class ExcelToMySQL {
         // 店家簽約人
         $SalesObj->sign_man      = trim( $activeSheet->getCell("AX"."$j")->getValue() );
 
-        if($this->checkStorePhoneIsExist($SalesObj->phone) == ""){
+        if($this->checkStoreIsExist($SalesObj->phone, $SalesObj->name) == ""){
             // 有店家電話，重新產生店家代碼
+            echo "地址 = ".$city.$area.$SalesObj->address."<br>";
             $SalesObj->store_num = $this->regetStoreNum($SalesObj->store_num,
                                 $city.$area.$SalesObj->address);
         }
@@ -608,6 +609,7 @@ class ExcelToMySQL {
             return $store_num;
         } else {
             $zipcode = $this->getZIPCode($address);
+            echo "zipcode = ".$zipcode."<br>";
             if ($zipcode == false){
                 return "";
             } else {
@@ -616,11 +618,12 @@ class ExcelToMySQL {
         }
     }
 
-    function checkStorePhoneIsExist($phone) {
+    function checkStoreIsExist($phone, $store_name) {
         $id = "";
-        $sql = "SELECT * FROM `sales` WHERE phone = :phone";
+        $sql = "SELECT * FROM `sales` WHERE phone = :phone AND store_name = :store_name";
         $stmt = $this->dbh->prepare($sql);
         $stmt->bindParam(':phone', $phone, PDO::PARAM_STR);
+        $stmt->bindParam(':store_name', $store_name, PDO::PARAM_STR);
         $stmt->execute();
         while($row = $stmt->fetch()) {
             $id = $row['id'];
