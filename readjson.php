@@ -9,7 +9,7 @@
     $insertCount = 0;
 
 
-    $json = file_get_contents("notify_0306.json");
+    $json = file_get_contents("notify_0319-0326.json");
     $json_arary = json_decode($json);
 
     $email = '';
@@ -23,7 +23,7 @@
             $name  = $wish->name;
             echo $name.", ";
         }
-        echo $email."<br>";
+        // echo $email."<br>";
         // echo $wish->name."<br>";
         $sql = "SELECT * FROM `wish_list` WHERE email = :eamil";
         $stmt = $devDB->prepare($sql);
