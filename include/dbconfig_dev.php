@@ -5,10 +5,14 @@
         global $devDB;
         $server_url = $_SERVER['SERVER_NAME'];
         if ($server_url == "soar.eatme.tw") {
-            $db_host = 'eatmedb.cgcvau6esuvd.ap-northeast-1.rds.amazonaws.com';
-            $db_name = 'eatme_app_dev';
-            $db_user = 'eatmedev';
-            $db_pass = 'eatmedev';
+            //$db_host = 'eatmedb.cgcvau6esuvd.ap-northeast-1.rds.amazonaws.com';
+            //$db_name = 'eatme_app_dev';
+            //$db_user = 'eatmedev';
+            //$db_pass = 'eatmedev';
+            $db_host = 'eatme-official.cubqmdqtjl7y.ap-northeast-1.rds.amazonaws.com';
+            $db_name = 'eatme_app';
+            $db_user = 'eatme';
+            $db_pass = 'eatme1225';
         } else if ($server_url == "localhost") {
             $db_host = '127.0.0.1';
             $db_name = 'test0401';
