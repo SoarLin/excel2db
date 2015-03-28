@@ -11,7 +11,7 @@
     $insertCount = 0;
     $updateCount = 0;
 
-    $file = "preorder_miss_address0316.xlsx";
+    $file = "preorder_miss_address0327.xlsx";
     try {
         $PHPExcel = PHPExcel_IOFactory::load($file);
     } catch(Exception $e) {
@@ -28,8 +28,8 @@
 
     $rowIndex = 3;
     // $rowIndex = 240;
-    // $highestRow = $rowIndex + 10;
-    for($j = $rowIndex ; $j <= $highestRow; $j++){
+    $highestRow = $rowIndex + 10;
+    for($j = $rowIndex ; $j < $highestRow; $j++){
     // for($j = $rowIndex ; $j <= $rowIndex; $j++){
 
         $CardObj = new stdClass();
@@ -39,20 +39,20 @@
         $CardObj->address = trim($activeSheet->getCell("H"."$j")->getValue());
 
         if ($ID = GetCardOrderID($CardObj->username)){
-              // $zip = null;
-              // echo "ID = ".$ID.", 姓名:".$CardObj->username." ";
-              // if ($zip = getZIPCode($CardObj->address)){
-              //     $zipcode = substr($zip, 0, 3);
-              //     $CardObj->zipcode = $zipcode;
-              //     $CardObj->address = $zip." ".$CardObj->address;
+              $zip = null;
+              echo "ID = ".$ID.", 姓名:".$CardObj->username." ";
+              if ($zip = getZIPCode($CardObj->address)){
+                  $zipcode = substr($zip, 0, 3);
+                  $CardObj->zipcode = $zipcode;
+                  $CardObj->address = $zip." ".$CardObj->address;
 
-              //     echo "郵遞區號＋地址 : ".$CardObj->address."<br><br>";
-              //     $CardDB->update($ID, $CardObj);
-              // } else {
-              //     echo "找不到的郵遞區號";
-              //     echo "地址 : ".$CardObj->address."<br><br>";
-              // }
-              // sleep(1);
+                  echo "郵遞區號＋地址 : ".$CardObj->address."<br><br>";
+                  $CardDB->update($ID, $CardObj);
+              } else {
+                  echo "找不到的郵遞區號";
+                  echo "地址 : ".$CardObj->address."<br><br>";
+              }
+              sleep(1);
         } else {
             echo "找不到的名字 ".$CardObj->username."<br>";
             // var_dump($CardObj);
