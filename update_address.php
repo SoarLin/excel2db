@@ -11,7 +11,7 @@
     $insertCount = 0;
     $updateCount = 0;
 
-    $file = "preorder_miss_address0327.xlsx";
+    $file = "preorder_miss_address0405.xlsx";
     try {
         $PHPExcel = PHPExcel_IOFactory::load($file);
     } catch(Exception $e) {
@@ -26,9 +26,9 @@
     $highestRow = $activeSheet->getHighestRow();
     echo "<p>分頁名稱 [".$sheetName."], 最高行數 = ".$highestRow."</p>";
 
-    $rowIndex = 3;
+    $rowIndex = 13;
     // $rowIndex = 240;
-    $highestRow = $rowIndex + 10;
+    $highestRow = $rowIndex + 2;
     for($j = $rowIndex ; $j < $highestRow; $j++){
     // for($j = $rowIndex ; $j <= $rowIndex; $j++){
 
