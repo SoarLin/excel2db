@@ -85,7 +85,7 @@ class ExcelToMySQL {
             $time_elapsed_us = microtime(true) - $start;
             // echo "處理第".$j."行資料，總共花費時間 = ".$time_elapsed_us.", 休息0.3秒 <br>";
             unset($SalesObj);
-            usleep(300000);
+            usleep(1000000);
         }
 
         unset($salesDB);
