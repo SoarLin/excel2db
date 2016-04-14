@@ -15,7 +15,7 @@
             $db_pass = 'eatme1225';
         } else if ($server_url == "localhost") {
             $db_host = '127.0.0.1';
-            $db_name = 'test0401';
+            $db_name = 'patent';
             $db_user = 'root';
             $db_pass = 'mysql';
         }

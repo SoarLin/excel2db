@@ -30,7 +30,7 @@
       </div>
       <div id="navbar" class="navbar-collapse collapse">
         <ul class="nav navbar-nav navbar-right">
-          <li><a href="#">關於食我</a></li>
+          <li><a href="#">關於我</a></li>
           <li><a href="#">聯絡我們</a></li>
         </ul>
       </div><!--/.navbar-collapse -->
@@ -62,13 +62,14 @@
 
 <?php
     require_once 'include/config.php';
-    require_once 'include/ExcelToMySQL.php';
+    // require_once 'include/ExcelToMySQL.php';
+    require_once 'include/ExcelToSQL.php';
     ini_set('date.timezone','Asia/Taipei');
 
     define('ShowInfo', false);
     define('SITE_ROOT', realpath(dirname(__FILE__)));
 
-    $excelHandler = new ExcelToMySQL($devDB);
+    $excelHandler = new ExcelToSQL($devDB);
 
     if(isset($_FILES['userfile'])){
         $start = microtime(true);
@@ -124,7 +125,8 @@ function getUploadFile() {
     $uploadfile = basename($_FILES['userfile']['name']);
     $extension = pathinfo($uploadfile,PATHINFO_EXTENSION);
     // $newfilename = date("Y-m-d_H:i:s").".".$extension;
-    $newfilename = "test".".".$extension;
+    // $newfilename = "test".".".$extension;
+    $newfilename = $uploadfile; //上傳後同原檔名
     $newfilename_path = SITE_ROOT."/uploads/".$newfilename;
     if(ShowInfo) echo $newfilename_path;
 

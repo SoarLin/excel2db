@@ -5,3 +5,5 @@ include/PHPExcel/*
 /.tags
 /.gemtags
 /.tags_sorted_by_file
+lawsuit_report/*
+tech_report/*
